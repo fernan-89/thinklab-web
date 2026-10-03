@@ -34,7 +34,7 @@ Another gateway: `THINKLAB_GATEWAY_URL=http://host:port npm run dev`.
 The browser only ever calls `/api/...`. Vite's dev server and, in the container, nginx forward that to the gateway with the
 prefix stripped, so there is no CORS setup and no gateway URL baked into the bundle.
 
-With Docker, `thinklab-platform`'s `docker-compose.yml` has a `web` service on `http://localhost:3000`.
+With Docker, `thinklab-platform`'s `docker-compose.yml` has a `web` service on `http://localhost:3000`, behind a compose profile: `docker compose --profile web up -d --build`.
 
 ## Checks
 
