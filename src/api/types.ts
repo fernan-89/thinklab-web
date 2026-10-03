@@ -116,4 +116,6 @@ export interface ChainIntegrity {
   headHash?: string;
   firstBrokenSequence?: number;
   reason?: string;
+  /** How many anchors published outside the database the chain was confirmed against. */
+  anchorsVerified: number;
 }

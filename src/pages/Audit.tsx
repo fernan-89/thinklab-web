@@ -91,6 +91,7 @@ function Verdict({ verdict }: { verdict: ChainIntegrity }) {
       <div className="banner banner-ok" role="status">
         <strong>Intact.</strong> {verdict.entriesChecked} {verdict.entriesChecked === 1 ? 'entry' : 'entries'} checked.
         {verdict.headHash && <> Head <code title={verdict.headHash}>{verdict.headHash.slice(0, 16)}</code>.</>}
+        {verdict.anchorsVerified > 0 && <> Confirmed against {verdict.anchorsVerified} {verdict.anchorsVerified === 1 ? 'anchor' : 'anchors'} published outside the database.</>}
       </div>
     );
   }

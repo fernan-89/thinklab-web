@@ -319,7 +319,7 @@ describe('AuditPage', () => {
 
   it('verifies the chain and reports an intact one with its head', async () => {
     const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate')
-      ? { body: { valid: true, entriesChecked: 3, headSequence: 3, headHash: 'abcdef0123456789abcdef' } }
+      ? { body: { valid: true, entriesChecked: 3, headSequence: 3, headHash: 'abcdef0123456789abcdef', anchorsVerified: 2 } }
       : { body: [entry(1)] }));
     renderWithSession(<AuditPage />, impl);
     const user = userEvent.setup();
@@ -330,6 +330,7 @@ describe('AuditPage', () => {
     expect(status).toHaveTextContent('Intact.');
     expect(status).toHaveTextContent('3 entries checked');
     expect(status).toHaveTextContent('abcdef0123456789');
+    expect(status).toHaveTextContent('Confirmed against 2 anchors published outside the database');
   });
 
   it('points at the broken entry, highlights its row, and says what is still trustworthy', async () => {
@@ -349,6 +350,18 @@ describe('AuditPage', () => {
     expect(screen.getByRole('cell', { name: '1' }).closest('tr')).not.toHaveClass('selected');
   });
 
+  it('says so in the singular for one anchor', async () => {
+    const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate')
+      ? { body: { valid: true, entriesChecked: 1, headSequence: 1, headHash: 'abcdef0123456789abcdef', anchorsVerified: 1 } }
+      : { body: [] }));
+    renderWithSession(<AuditPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Verify integrity' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Confirmed against 1 anchor published');
+  });
+
   it('singular wording for a one-entry chain, and no head for an empty one', async () => {
     let verdict: Record<string, unknown> = { valid: true, entriesChecked: 1, headSequence: 1, headHash: '1234567890abcdef12' };
     const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate') ? { body: verdict } : { body: [] }));
@@ -362,6 +375,7 @@ describe('AuditPage', () => {
     await user.click(screen.getByRole('button', { name: 'Verify integrity' }));
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('0 entries checked'));
     expect(screen.getByRole('status')).not.toHaveTextContent('Head');
+    expect(screen.getByRole('status')).not.toHaveTextContent('Confirmed against');
   });
 
   it('shows the problem when verification itself fails', async () => {
