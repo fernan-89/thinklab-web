@@ -4,16 +4,19 @@ import { Layout } from './components/Layout';
 import { AssetsPage } from './pages/Assets';
 import { DiscoveryPage } from './pages/Discovery';
 import { LoginPage } from './pages/Login';
+import { SsoCompletePage } from './pages/SsoComplete';
 import { AuditPage } from './pages/Audit';
 import { PlanPage } from './pages/Plan';
 import { StockPage } from './pages/Stock';
 import { TopologyPage } from './pages/Topology';
 
 export function App() {
-  const { session } = useSession();
+  const { session, restoring } = useSession();
+  if (restoring) return <p className="muted" style={{ padding: '2rem' }}>Restoring your session...</p>;
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/sso/complete" element={<SsoCompletePage />} />
       <Route element={session ? <Layout /> : <Navigate to="/login" replace />}>
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/discovery" element={<DiscoveryPage />} />

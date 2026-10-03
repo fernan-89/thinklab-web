@@ -14,3 +14,17 @@ export function subjectOf(token: string): string | undefined {
     return undefined;
   }
 }
+
+/** The claims the web app reads from an access token the gateway issued: subject, tenant (`tid`) and role. Read, not verified. */
+export function claimsOf(token: string): { sub?: string; tid?: string; role?: string } {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return {};
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(payload.length / 4) * 4, '='));
+    const claims = JSON.parse(json) as Record<string, unknown>;
+    const text = (value: unknown) => (typeof value === 'string' && value !== '' ? value : undefined);
+    return { sub: text(claims.sub), tid: text(claims.tid), role: text(claims.role) };
+  } catch {
+    return {};
+  }
+}

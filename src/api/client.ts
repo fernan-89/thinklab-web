@@ -5,6 +5,10 @@ export interface Session {
   displayName?: string;
   /** Present when the platform runs with security on; the gateway then derives tenant and executor from it. */
   accessToken?: string;
+  /** The session came from a federated (SSO) sign-in: its refresh token is an HttpOnly cookie the page cannot read, and the access token is kept in memory only. */
+  sso?: boolean;
+  /** When the access token expires (ms since the epoch), so it is refreshed before it does. */
+  expiresAt?: number;
 }
 
 /** An RFC 7807 problem document as every platform service emits it (plus the platform's `error_code`/`violations`). */

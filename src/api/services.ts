@@ -98,3 +98,18 @@ export const stockApi = (api: ApiClient) => ({
   adjust: (id: string, newQuantity: number, reason: string) => api.put(`${STOCK}/${id}/movement/adjust`, { newQuantity, reason }),
   discontinue: (id: string) => api.put(`${STOCK}/${id}/control/discontinue`),
 });
+
+export interface RefreshedSession {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+}
+
+/** The gateway's own session endpoints: the refresh token lives in an HttpOnly cookie, so these take no token from the page (gateway ADR-025). */
+export const sessionApi = (api: ApiClient) => ({
+  refresh: () => api.post<RefreshedSession>('/gateway/v1/session/refresh', undefined, { headers: { 'X-Requested-With': 'thinklab-web' } }),
+  logout: () => api.post<void>('/gateway/v1/session/logout', undefined, { headers: { 'X-Requested-With': 'thinklab-web' } }),
+});
+
+/** Where a federated sign-in starts: the browser is sent to the organisation's identity provider and comes back through the gateway. */
+export const ssoLoginUrl = (organisationId: string) => `/api/identity-federation/v1/login/initiate?organisationId=${encodeURIComponent(organisationId)}`;
