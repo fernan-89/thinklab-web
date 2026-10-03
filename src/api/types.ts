@@ -91,3 +91,29 @@ export interface BlastRadius {
   direction: TraversalDirection;
   impactedNodes: ImpactedNode[];
 }
+
+export interface LedgerEntry {
+  id: string;
+  organisationId: string;
+  sequence: number;
+  occurredAt: string;
+  recordedAt: string;
+  source: string;
+  actor: string;
+  action: string;
+  resourceType: string;
+  resourceId?: string;
+  detail?: string;
+  recordedBy: string;
+  previousHash: string;
+  hash: string;
+}
+
+export interface ChainIntegrity {
+  valid: boolean;
+  entriesChecked: number;
+  headSequence: number;
+  headHash?: string;
+  firstBrokenSequence?: number;
+  reason?: string;
+}

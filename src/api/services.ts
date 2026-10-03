@@ -1,13 +1,14 @@
 import type { ApiClient } from './client';
 import type {
-  Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, DiscoveredItem, DiscoveredItemStatus, TopologyEdge, TopologyNode,
-  TraversalDirection,
+  Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, LedgerEntry,
+  TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
 
 const ASSETS = '/it-asset-registry/v1';
 const DISCOVERY = '/it-discovery/v1';
 const TOPOLOGY = '/it-topology-graph/v1';
 const AUTH = '/party-authentication/v1';
+const LEDGER = '/compliance-audit-ledger/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -63,4 +64,10 @@ export const topologyApi = (api: ApiClient) => ({
     api.get<TopologyEdge[]>(`${TOPOLOGY}/edge/retrieve`, filter),
   blastRadius: (nodeId: string, direction: TraversalDirection, maxHops: number) =>
     api.get<BlastRadius>(`${TOPOLOGY}/${nodeId}/blast-radius/retrieve`, { direction, maxHops }),
+});
+
+export const ledgerApi = (api: ApiClient) => ({
+  list: (filter: { actor?: string; resourceType?: string; resourceId?: string; limit?: number }) =>
+    api.get<LedgerEntry[]>(`${LEDGER}/retrieve`, filter),
+  verify: () => api.get<ChainIntegrity>(`${LEDGER}/integrity-check/evaluate`),
 });

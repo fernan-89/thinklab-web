@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { fakeFetch, ORG, renderWithSession, type Handler } from '../test-utils';
 import { App } from '../App';
 import { AssetsPage } from './Assets';
+import { AuditPage } from './Audit';
 import { DiscoveryPage } from './Discovery';
 import { LoginPage } from './Login';
 import { TopologyPage } from './Topology';
@@ -275,5 +276,97 @@ describe('TopologyPage', () => {
     await user.click(await screen.findByRole('button', { name: /^alone, ASSET/ }));
 
     expect(await screen.findByText('Nothing else is reached.')).toBeInTheDocument();
+  });
+});
+
+describe('AuditPage', () => {
+  const entry = (sequence: number, over: Record<string, unknown> = {}) => ({
+    id: `e${sequence}`, organisationId: ORG, sequence, occurredAt: '2026-10-03T12:00:00Z', recordedAt: '2026-10-03T12:00:01Z', source: 'platform-gateway',
+    actor: 'alice', action: 'PUT /it-asset-registry/v1/{id}/control/ready', resourceType: 'it-asset-registry', resourceId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+    detail: 'status=204', recordedBy: 'platform-gateway', previousHash: '0'.repeat(64), hash: 'f'.repeat(64), ...over,
+  });
+
+  it('lists the entries newest first with a short resource id, and filters by actor and resource type', async () => {
+    const { impl, calls } = fakeFetch((r) => (r.url.pathname.endsWith('/retrieve') ? { body: [entry(2), entry(1, { actor: 'bob', resourceId: undefined })] } : undefined));
+    renderWithSession(<AuditPage />, impl);
+    const user = userEvent.setup();
+
+    expect(await screen.findAllByText('PUT /it-asset-registry/v1/{id}/control/ready')).toHaveLength(2);
+    expect(screen.getByText('aaaaaaaa')).toBeInTheDocument();
+    expect(calls[0].url.searchParams.get('limit')).toBe('200');
+    expect(calls[0].url.searchParams.get('actor')).toBeNull();
+
+    await user.type(screen.getByLabelText('Actor'), ' alice ');
+    await user.type(screen.getByLabelText('Resource type'), 'it-asset-registry');
+    await user.click(screen.getByRole('button', { name: 'Filter' }));
+
+    await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('actor')).toBe('alice'));
+    expect(calls.at(-1)!.url.searchParams.get('resourceType')).toBe('it-asset-registry');
+  });
+
+  it('says so when there are no entries', async () => {
+    const { impl } = fakeFetch(() => ({ body: [] }));
+    renderWithSession(<AuditPage />, impl);
+
+    expect(await screen.findByText('No entries.')).toBeInTheDocument();
+  });
+
+  it('verifies the chain and reports an intact one with its head', async () => {
+    const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate')
+      ? { body: { valid: true, entriesChecked: 3, headSequence: 3, headHash: 'abcdef0123456789abcdef' } }
+      : { body: [entry(1)] }));
+    renderWithSession(<AuditPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Verify integrity' }));
+
+    const status = await screen.findByRole('status');
+    expect(status).toHaveTextContent('Intact.');
+    expect(status).toHaveTextContent('3 entries checked');
+    expect(status).toHaveTextContent('abcdef0123456789');
+  });
+
+  it('points at the broken entry, highlights its row, and says what is still trustworthy', async () => {
+    const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate')
+      ? { body: { valid: false, entriesChecked: 2, headSequence: 1, firstBrokenSequence: 2, reason: 'The content of the entry no longer matches its hash.' } }
+      : { body: [entry(2), entry(1)] }));
+    renderWithSession(<AuditPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Verify integrity' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Chain broken at entry #2.');
+    expect(alert).toHaveTextContent('no longer matches its hash');
+    expect(alert).toHaveTextContent('Everything up to #1');
+    expect(screen.getByRole('cell', { name: '2' }).closest('tr')).toHaveClass('selected');
+    expect(screen.getByRole('cell', { name: '1' }).closest('tr')).not.toHaveClass('selected');
+  });
+
+  it('singular wording for a one-entry chain, and no head for an empty one', async () => {
+    let verdict: Record<string, unknown> = { valid: true, entriesChecked: 1, headSequence: 1, headHash: '1234567890abcdef12' };
+    const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate') ? { body: verdict } : { body: [] }));
+    renderWithSession(<AuditPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Verify integrity' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('1 entry checked');
+
+    verdict = { valid: true, entriesChecked: 0, headSequence: 0 };
+    await user.click(screen.getByRole('button', { name: 'Verify integrity' }));
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('0 entries checked'));
+    expect(screen.getByRole('status')).not.toHaveTextContent('Head');
+  });
+
+  it('shows the problem when verification itself fails', async () => {
+    const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/integrity-check/evaluate')
+      ? { status: 503, body: { title: 'Service Unavailable', detail: 'ledger unavailable', error_code: 'ERR-GTW-00502' } }
+      : { body: [] }));
+    renderWithSession(<AuditPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Verify integrity' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('ERR-GTW-00502');
   });
 });

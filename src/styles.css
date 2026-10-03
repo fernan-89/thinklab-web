@@ -112,6 +112,7 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .banner p { margin: 0.25rem 0 0; }
 .banner ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
 .banner-error { background: var(--danger-bg); color: var(--danger-text); }
+.banner-ok { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
 .banner .code { margin-left: 0.5rem; }
 .empty { color: var(--muted); padding: 1rem 0; }
 .field-error { color: var(--danger-text); margin: 0.2rem 0 0; font-size: 0.85rem; }

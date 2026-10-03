@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { AssetsPage } from './pages/Assets';
 import { DiscoveryPage } from './pages/Discovery';
 import { LoginPage } from './pages/Login';
+import { AuditPage } from './pages/Audit';
 import { TopologyPage } from './pages/Topology';
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/discovery" element={<DiscoveryPage />} />
         <Route path="/topology" element={<TopologyPage />} />
+        <Route path="/audit" element={<AuditPage />} />
       </Route>
       <Route path="*" element={<Navigate to={session ? '/assets' : '/login'} replace />} />
     </Routes>

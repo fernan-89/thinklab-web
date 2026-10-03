@@ -13,6 +13,7 @@ export function Layout() {
           <NavLink to="/assets">Assets</NavLink>
           <NavLink to="/discovery">Discovery</NavLink>
           <NavLink to="/topology">Topology</NavLink>
+          <NavLink to="/audit">Audit</NavLink>
         </nav>
         <div className="who">
           <span title={session?.organisationId}>{session?.executor}</span>
