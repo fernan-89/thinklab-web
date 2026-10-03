@@ -1,0 +1,66 @@
+import type { ApiClient } from './client';
+import type {
+  Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, DiscoveredItem, DiscoveredItemStatus, TopologyEdge, TopologyNode,
+  TraversalDirection,
+} from './types';
+
+const ASSETS = '/it-asset-registry/v1';
+const DISCOVERY = '/it-discovery/v1';
+const TOPOLOGY = '/it-topology-graph/v1';
+const AUTH = '/party-authentication/v1';
+
+export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
+
+/** The Asset FSM (mirrors Asset.AssetStatus.canTransitionTo); the API stays the authority, this only hides illegal buttons. */
+export const ASSET_ACTIONS: Record<AssetStatus, { action: AssetAction; label: string }[]> = {
+  PROVISIONED: [{ action: 'ready', label: 'Mark ready' }, { action: 'decommission', label: 'Decommission' }],
+  READY: [{ action: 'deploy', label: 'Deploy' }, { action: 'decommission', label: 'Decommission' }],
+  DEPLOYED: [
+    { action: 'maintenance', label: 'Start maintenance' },
+    { action: 'ready', label: 'Return to ready' },
+    { action: 'decommission', label: 'Decommission' },
+  ],
+  MAINTENANCE: [
+    { action: 'deploy', label: 'Redeploy' },
+    { action: 'ready', label: 'Return to ready' },
+    { action: 'decommission', label: 'Decommission' },
+  ],
+  DECOMMISSIONED: [],
+};
+
+export interface SessionTokens {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  refreshToken: string;
+}
+
+export const authApi = (api: ApiClient) => ({
+  signIn: (organisationId: string, email: string, password: string) =>
+    api.post<SessionTokens>(`${AUTH}/session/initiate`, { organisationId, email, password }),
+});
+
+export const assetApi = (api: ApiClient) => ({
+  list: (filter: { status?: AssetStatus; category?: AssetCategory }) => api.get<Asset[]>(`${ASSETS}/retrieve`, filter),
+  retrieve: (id: string) => api.get<Asset>(`${ASSETS}/${id}/retrieve`),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${ASSETS}/${id}/audit-log/retrieve`),
+  control: (id: string, action: AssetAction) => api.put(`${ASSETS}/${id}/control/${action}`),
+});
+
+export const discoveryApi = (api: ApiClient) => ({
+  list: (filter: { status?: DiscoveredItemStatus; source?: string; category?: AssetCategory }) =>
+    api.get<DiscoveredItem[]>(`${DISCOVERY}/retrieve`, filter),
+  claim: (id: string) => api.put(`${DISCOVERY}/${id}/review/claim`),
+  reviewUpdate: (id: string, update: { suggestedCategory?: AssetCategory; matchedAssetId?: string }) =>
+    api.put(`${DISCOVERY}/${id}/review/update`, update),
+  ignore: (id: string) => api.put(`${DISCOVERY}/${id}/control/ignore`),
+  promote: (id: string) => api.put<DiscoveredItem>(`${DISCOVERY}/${id}/control/promote`),
+});
+
+export const topologyApi = (api: ApiClient) => ({
+  nodes: (filter: { nodeType?: string; status?: string } = {}) => api.get<TopologyNode[]>(`${TOPOLOGY}/retrieve`, filter),
+  edges: (filter: { relationshipType?: string; nodeId?: string; status?: string } = {}) =>
+    api.get<TopologyEdge[]>(`${TOPOLOGY}/edge/retrieve`, filter),
+  blastRadius: (nodeId: string, direction: TraversalDirection, maxHops: number) =>
+    api.get<BlastRadius>(`${TOPOLOGY}/${nodeId}/blast-radius/retrieve`, { direction, maxHops }),
+});
