@@ -42,6 +42,8 @@ export const authApi = (api: ApiClient) => ({
 });
 
 export const assetApi = (api: ApiClient) => ({
+  create: (body: { name: string; category: AssetCategory; serialNumber: string; specifications: Record<string, string> }) =>
+    api.post<Asset>(`${ASSETS}/initiate`, body),
   list: (filter: { status?: AssetStatus; category?: AssetCategory }) => api.get<Asset[]>(`${ASSETS}/retrieve`, filter),
   retrieve: (id: string) => api.get<Asset>(`${ASSETS}/${id}/retrieve`),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${ASSETS}/${id}/audit-log/retrieve`),

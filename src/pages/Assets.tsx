@@ -4,6 +4,7 @@ import { ASSET_CATEGORIES, ASSET_STATUSES, type Asset, type AssetCategory, type 
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
+import { NewAssetForm } from './NewAssetForm';
 
 export function AssetsPage() {
   const { api } = useSession();
@@ -12,6 +13,7 @@ export function AssetsPage() {
   const [category, setCategory] = useState<AssetCategory | ''>('');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string>();
+  const [creating, setCreating] = useState(false);
 
   const list = useAsync(() => assets.list({ status: status || undefined, category: category || undefined }), [status, category]);
   const needle = query.trim().toLowerCase();
@@ -21,7 +23,20 @@ export function AssetsPage() {
 
   return (
     <section>
-      <h1>Assets</h1>
+      <div className="page-head">
+        <h1>Assets</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New asset</button>
+      </div>
+      {creating && (
+        <NewAssetForm
+          onCancel={() => setCreating(false)}
+          onCreated={(asset) => {
+            setCreating(false);
+            setSelectedId(asset.id);
+            list.reload();
+          }}
+        />
+      )}
       <div className="filters">
         <input type="search" aria-label="Search by name or serial" placeholder="Search name or serial" value={query} onChange={(e) => setQuery(e.target.value)} />
         <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as AssetStatus | '')}>

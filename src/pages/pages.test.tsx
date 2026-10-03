@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -388,5 +388,110 @@ describe('AuditPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Verify integrity' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('ERR-GTW-00502');
+  });
+});
+
+describe('NewAssetForm', () => {
+  const created = (over: Record<string, unknown> = {}) => asset({ id: 'new-1', name: 'Lab server', category: 'SERVER', serialNumber: 'SN-NEW', status: 'PROVISIONED', ...over });
+
+  it('registers an asset with its specifications, then selects it and reloads the list', async () => {
+    const { impl, calls } = fakeFetch((r) => {
+      if (r.method === 'POST') return { status: 201, body: created() };
+      if (r.url.pathname.endsWith('/new-1/retrieve')) return { body: created() };
+      if (r.url.pathname.endsWith('/audit-log/retrieve')) return { body: [] };
+      return { body: [] };
+    });
+    renderWithSession(<AssetsPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'New asset' }));
+    const form = screen.getByRole('form', { name: 'New asset' });
+    expect(within(form).getByRole('button', { name: 'Register asset' })).toBeDisabled();
+    await user.type(within(form).getByLabelText('Name'), '  Lab server ');
+    await user.selectOptions(within(form).getByLabelText('Category'), 'SERVER');
+    await user.type(within(form).getByLabelText('Serial number'), 'SN-NEW');
+    await user.click(within(form).getByRole('button', { name: 'Add specification' }));
+    await user.type(within(form).getByLabelText('Specification name'), 'cpu');
+    await user.type(within(form).getByLabelText('Specification value'), 'Xeon');
+    await user.click(within(form).getByRole('button', { name: 'Register asset' }));
+
+    expect(await screen.findByRole('complementary', { name: 'Asset detail' })).toBeInTheDocument();
+    const post = calls.find((c) => c.method === 'POST')!;
+    expect(post.url.pathname).toBe('/api/it-asset-registry/v1/initiate');
+    expect(post.body).toEqual({ name: 'Lab server', category: 'SERVER', serialNumber: 'SN-NEW', specifications: { cpu: 'Xeon' } });
+    expect(screen.queryByRole('form', { name: 'New asset' })).not.toBeInTheDocument();
+    expect(calls.filter((c) => c.method === 'GET' && c.url.pathname.endsWith('/it-asset-registry/v1/retrieve')).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows the schema violations the registry returns (422) and keeps what was typed', async () => {
+    const { impl } = fakeFetch((r) => (r.method === 'POST'
+      ? { status: 422, body: { title: 'Unprocessable Entity', detail: 'Schema violated', error_code: 'ERR-AST-00422', violations: ['$.cpu: is missing'] } }
+      : { body: [] }));
+    renderWithSession(<AssetsPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'New asset' }));
+    const form = screen.getByRole('form', { name: 'New asset' });
+    await user.type(within(form).getByLabelText('Name'), 'Phone');
+    await user.selectOptions(within(form).getByLabelText('Category'), 'MOBILE_DEVICE');
+    await user.type(within(form).getByLabelText('Serial number'), 'SN-1');
+    await user.click(within(form).getByRole('button', { name: 'Register asset' }));
+
+    const alert = await within(form).findByRole('alert');
+    expect(alert).toHaveTextContent('ERR-AST-00422');
+    expect(alert).toHaveTextContent('$.cpu: is missing');
+    expect(within(form).getByLabelText('Name')).toHaveValue('Phone');
+  });
+
+  it('shows a duplicate serial number (409) and lets the user cancel', async () => {
+    const { impl } = fakeFetch((r) => (r.method === 'POST'
+      ? { status: 409, body: { title: 'Conflict', detail: 'Serial number already registered', error_code: 'ERR-AST-00409' } }
+      : { body: [] }));
+    renderWithSession(<AssetsPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'New asset' }));
+    const form = screen.getByRole('form', { name: 'New asset' });
+    await user.type(within(form).getByLabelText('Name'), 'Dup');
+    await user.selectOptions(within(form).getByLabelText('Category'), 'LAPTOP');
+    await user.type(within(form).getByLabelText('Serial number'), 'SN-DUP');
+    await user.click(within(form).getByRole('button', { name: 'Register asset' }));
+    expect(await within(form).findByRole('alert')).toHaveTextContent('ERR-AST-00409');
+
+    await user.click(within(form).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('form', { name: 'New asset' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'New asset' })).toBeEnabled();
+  });
+
+  it('refuses duplicate or nameless specification keys before calling the API, and rows can be removed', async () => {
+    const { impl, calls } = fakeFetch(() => ({ body: [] }));
+    renderWithSession(<AssetsPage />, impl);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'New asset' }));
+    const form = screen.getByRole('form', { name: 'New asset' });
+    await user.type(within(form).getByLabelText('Name'), 'X');
+    await user.selectOptions(within(form).getByLabelText('Category'), 'SERVER');
+    await user.type(within(form).getByLabelText('Serial number'), 'S');
+    const submit = within(form).getByRole('button', { name: 'Register asset' });
+    expect(submit).toBeEnabled();
+
+    await user.click(within(form).getByRole('button', { name: 'Add specification' }));
+    await user.click(within(form).getByRole('button', { name: 'Add specification' }));
+    const names = within(form).getAllByLabelText('Specification name');
+    const values = within(form).getAllByLabelText('Specification value');
+    await user.type(values[0], 'orphan value');
+    expect(within(form).getByText('A specification needs a name.')).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    await user.type(names[0], 'cpu');
+    await user.type(names[1], 'cpu');
+    expect(within(form).getByText('Two specifications have the same name.')).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+
+    await user.click(within(form).getAllByRole('button', { name: 'Remove' })[1]);
+    expect(within(form).queryByText('Two specifications have the same name.')).not.toBeInTheDocument();
+    expect(submit).toBeEnabled();
+    expect(calls.some((c) => c.method === 'POST')).toBe(false);
   });
 });
