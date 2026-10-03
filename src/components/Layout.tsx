@@ -31,6 +31,12 @@ export function Layout() {
           </button>
         </div>
       </header>
+      <div className="productband">
+        <div className="productband-inner">
+          <span className="logo" aria-hidden="true" />
+          <span className="product">Platform</span>
+        </div>
+      </div>
       <main>
         <Outlet />
       </main>
