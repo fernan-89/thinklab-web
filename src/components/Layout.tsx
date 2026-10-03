@@ -14,6 +14,7 @@ export function Layout() {
           <NavLink to="/discovery">Discovery</NavLink>
           <NavLink to="/topology">Topology</NavLink>
           <NavLink to="/audit">Audit</NavLink>
+          <NavLink to="/plan">Plan</NavLink>
         </nav>
         <div className="who">
           <span title={session?.organisationId}>{session?.displayName ?? session?.executor}</span>

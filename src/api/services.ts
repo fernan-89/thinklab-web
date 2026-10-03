@@ -1,6 +1,7 @@
 import type { ApiClient } from './client';
 import type {
-  Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, LedgerEntry,
+  Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
+  Plan, PlanStatus, Subscription,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
 
@@ -9,6 +10,7 @@ const DISCOVERY = '/it-discovery/v1';
 const TOPOLOGY = '/it-topology-graph/v1';
 const AUTH = '/party-authentication/v1';
 const LEDGER = '/compliance-audit-ledger/v1';
+const BILLING = '/subscription-billing/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -72,4 +74,10 @@ export const ledgerApi = (api: ApiClient) => ({
   list: (filter: { actor?: string; resourceType?: string; resourceId?: string; limit?: number }) =>
     api.get<LedgerEntry[]>(`${LEDGER}/retrieve`, filter),
   verify: () => api.get<ChainIntegrity>(`${LEDGER}/integrity-check/evaluate`),
+});
+
+export const billingApi = (api: ApiClient) => ({
+  current: () => api.get<Subscription>(`${BILLING}/current/retrieve`),
+  plans: (status?: PlanStatus) => api.get<Plan[]>(`${BILLING}/plan/retrieve`, { status }),
+  evaluate: (feature: string) => api.get<Entitlement>(`${BILLING}/entitlement/evaluate`, { feature }),
 });

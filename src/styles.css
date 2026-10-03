@@ -150,3 +150,9 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .form fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.8rem; display: grid; gap: 0.5rem; }
 .form legend { padding: 0 0.3rem; color: var(--muted); font-size: 0.85rem; }
 .spec-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; align-items: center; }
+
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; margin: 0.5rem 0 1rem; }
+.plan-card h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+.plan-card ul { margin: 0; padding-left: 1.1rem; }
+.plan-current { border-color: var(--accent, currentColor); }
+.page-plan h2 { margin: 1.4rem 0 0.5rem; }

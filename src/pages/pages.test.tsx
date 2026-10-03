@@ -8,6 +8,7 @@ import { AssetsPage } from './Assets';
 import { AuditPage } from './Audit';
 import { DiscoveryPage } from './Discovery';
 import { LoginPage } from './Login';
+import { PlanPage } from './Plan';
 import { TopologyPage } from './Topology';
 
 beforeEach(() => sessionStorage.clear());
@@ -493,5 +494,107 @@ describe('NewAssetForm', () => {
     expect(within(form).queryByText('Two specifications have the same name.')).not.toBeInTheDocument();
     expect(submit).toBeEnabled();
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
+  });
+});
+
+describe('PlanPage', () => {
+  const subscription = (over: Record<string, unknown> = {}) => ({
+    id: 's1', organisationId: ORG, planCode: 'TEAM', status: 'ACTIVE', createdAt: '2026-10-01T10:00:00Z', updatedAt: '2026-10-01T10:00:00Z', ...over,
+  });
+  const plan = (code: string, entitlements: Record<string, number>) => ({
+    id: `p-${code}`, code, name: `${code} edition`, entitlements, status: 'ACTIVE', createdAt: '2026-10-01T10:00:00Z', updatedAt: '2026-10-01T10:00:00Z',
+  });
+  const decide = (feature: string, over: Record<string, unknown> = {}) => {
+    const answers: Record<string, Record<string, unknown>> = {
+      assets: { allowed: true, limit: 500 },
+      sites: { allowed: true },
+      discovery: { allowed: true },
+      audit: { allowed: true },
+      sso: { allowed: false },
+    };
+    return { feature, source: 'SUBSCRIPTION', planCode: 'TEAM', ...answers[feature], ...over };
+  };
+  const server = (sub: Record<string, unknown> | undefined, evaluate: (feature: string) => Record<string, unknown> = decide): Handler => (r) => {
+    if (r.url.pathname.endsWith('/current/retrieve')) {
+      return sub ? { body: sub } : { status: 404, body: { title: 'Not Found', error_code: 'ERR-SUB-00404' } };
+    }
+    if (r.url.pathname.endsWith('/entitlement/evaluate')) return { body: evaluate(r.url.searchParams.get('feature')!) };
+    if (r.url.pathname.endsWith('/plan/retrieve')) return { body: [plan('HOMELAB', { assets: 25, sso: 0 }), plan('TEAM', { assets: 500, sites: -1 })] };
+    return undefined;
+  };
+
+  it('shows the subscription, what the plan includes with its limits, and the plans on sale', async () => {
+    const { impl, calls } = fakeFetch(server(subscription()));
+    renderWithSession(<PlanPage />, impl);
+
+    const card = await screen.findByLabelText('Current subscription');
+    expect(within(card).getByText('TEAM')).toBeInTheDocument();
+    expect(within(card).getByText('ACTIVE')).toBeInTheDocument();
+
+    const table = await screen.findByRole('table', { name: 'Entitlements' });
+    const rows = within(table).getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell').map((cell) => cell.textContent));
+    expect(rows[0]).toEqual(['Assets', 'Yes', '500', 'Your subscription TEAM']);
+    expect(rows[1].slice(1, 3)).toEqual(['Yes', 'Unlimited']);
+    expect(rows[2].slice(1, 3)).toEqual(['Yes', 'Included']);
+    expect(rows[4].slice(1, 3)).toEqual(['No', 'Not included']);
+
+    const mine = await screen.findByLabelText('Plan TEAM');
+    expect(within(mine).getByText('(yours)')).toBeInTheDocument();
+    expect(within(mine).getByText('Sites: Unlimited')).toBeInTheDocument();
+    const other = screen.getByLabelText('Plan HOMELAB');
+    expect(within(other).getByText('Assets: 25')).toBeInTheDocument();
+    expect(within(other).getByText('Single sign-on: Not included')).toBeInTheDocument();
+    expect(within(other).queryByText('(yours)')).not.toBeInTheDocument();
+    expect(calls.filter((c) => c.url.pathname.endsWith('/entitlement/evaluate'))).toHaveLength(5);
+    expect(calls.find((c) => c.url.pathname.endsWith('/plan/retrieve'))!.url.searchParams.get('status')).toBe('ACTIVE');
+  });
+
+  it('says so when the organisation has no subscription, and names the default plan as the decider', async () => {
+    const { impl } = fakeFetch(server(undefined, (f) => decide(f, { source: 'DEFAULT_PLAN', planCode: 'HOMELAB' })));
+    renderWithSession(<PlanPage />, impl);
+
+    expect(await screen.findByText('No subscription.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Default plan (no subscription)')).toHaveLength(5);
+  });
+
+  it('says that nothing is limited when no plans are configured', async () => {
+    const { impl } = fakeFetch((r) => {
+      if (r.url.pathname.endsWith('/plan/retrieve')) return { body: [] };
+      return server(undefined, (f) => ({ feature: f, allowed: true, source: 'UNMANAGED' }))(r);
+    });
+    renderWithSession(<PlanPage />, impl);
+
+    expect(await screen.findAllByText('No plans configured: everything is allowed')).toHaveLength(5);
+    expect(await screen.findByText('No plans are on sale.')).toBeInTheDocument();
+  });
+
+  it('warns about a suspended and a past-due subscription', async () => {
+    const suspended = fakeFetch(server(subscription({ status: 'SUSPENDED' }), (f) => decide(f, { allowed: false, limit: undefined, source: 'SUSPENDED' })));
+    const first = renderWithSession(<PlanPage />, suspended.impl);
+
+    expect(await screen.findByText(/This subscription is suspended/)).toBeInTheDocument();
+    expect((await screen.findAllByText('Subscription suspended')).length).toBeGreaterThan(0);
+    first.unmount();
+
+    const overdue = fakeFetch(server(subscription({ status: 'PAST_DUE' })));
+    renderWithSession(<PlanPage />, overdue.impl);
+    expect(await screen.findByText(/Payment is overdue/)).toBeInTheDocument();
+  });
+
+  it('shows the problem when the billing service answers an error other than "no subscription"', async () => {
+    const { impl } = fakeFetch((r) => (r.url.pathname.endsWith('/current/retrieve')
+      ? { status: 500, body: { title: 'Internal Server Error', error_code: 'ERR-INTERNAL-00500' } }
+      : server(subscription())(r)));
+    renderWithSession(<PlanPage />, impl);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('ERR-INTERNAL-00500');
+  });
+
+  it('is reachable from the navigation', async () => {
+    const { impl } = fakeFetch(server(subscription()));
+    renderWithSession(<App />, impl, undefined, '/plan');
+
+    expect(await screen.findByRole('heading', { name: 'Plan' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Plan' })).toBeInTheDocument();
   });
 });

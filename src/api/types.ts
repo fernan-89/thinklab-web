@@ -119,3 +119,38 @@ export interface ChainIntegrity {
   /** How many anchors published outside the database the chain was confirmed against. */
   anchorsVerified: number;
 }
+
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELLED';
+export type PlanStatus = 'DRAFT' | 'ACTIVE' | 'RETIRED';
+
+export interface Subscription {
+  id: string;
+  organisationId: string;
+  planCode: string;
+  status: SubscriptionStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Plan {
+  id: string;
+  code: string;
+  name: string;
+  /** feature -> limit: -1 unlimited, 0 not included, a positive number is the allowed quantity. */
+  entitlements: Record<string, number>;
+  status: PlanStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Where an entitlement answer came from: the organisation's own plan, the default plan, a suspension, or nothing configured (allowed). */
+export type EntitlementSource = 'SUBSCRIPTION' | 'DEFAULT_PLAN' | 'SUSPENDED' | 'UNMANAGED';
+
+export interface Entitlement {
+  feature: string;
+  allowed: boolean;
+  /** The allowed quantity; absent when unlimited or not allowed. */
+  limit?: number;
+  source: EntitlementSource;
+  planCode?: string;
+}
