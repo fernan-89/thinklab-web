@@ -181,3 +181,53 @@ export interface StockEntry {
   balanceAfter: number;
   reason?: string;
 }
+
+// ---- Approvals (workflow-approval-service, ADR-033/034) ----
+
+export interface ApprovalStage {
+  requiredApprovals: number;
+  eligibleApproverIds: string[];
+}
+
+export interface ApprovalPolicy {
+  id: string;
+  organisationId: string;
+  name: string;
+  /** The first stage (the whole quorum of a one-stage policy). */
+  requiredApprovals: number;
+  eligibleApproverIds: string[];
+  stages: ApprovalStage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export const APPROVAL_STATUSES: ApprovalStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'];
+
+export interface ApprovalDecision {
+  approverId: string;
+  outcome: 'APPROVE' | 'REJECT';
+  comment?: string;
+  decidedAt: string;
+  /** One-based. */
+  stage: number;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  organisationId: string;
+  subjectType: string;
+  subjectId: string;
+  requesterId: string;
+  policyId: string;
+  /** The stage the request is waiting on now. */
+  requiredApprovals: number;
+  eligibleApproverIds: string[];
+  /** One-based. */
+  currentStage: number;
+  stages: ApprovalStage[];
+  status: ApprovalStatus;
+  decisions: ApprovalDecision[];
+  createdAt: string;
+  updatedAt: string;
+}

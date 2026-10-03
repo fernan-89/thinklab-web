@@ -1,7 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
-  Plan, PlanStatus, Subscription,
+  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, Plan, PlanStatus, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
@@ -13,6 +13,7 @@ const AUTH = '/party-authentication/v1';
 const LEDGER = '/compliance-audit-ledger/v1';
 const BILLING = '/subscription-billing/v1';
 const STOCK = '/consumable-inventory/v1';
+const APPROVALS = '/workflow-approval/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -113,3 +114,17 @@ export const sessionApi = (api: ApiClient) => ({
 
 /** Where a federated sign-in starts: the browser is sent to the organisation's identity provider and comes back through the gateway. */
 export const ssoLoginUrl = (organisationId: string) => `/api/identity-federation/v1/login/initiate?organisationId=${encodeURIComponent(organisationId)}`;
+
+export const approvalApi = (api: ApiClient) => ({
+  policies: () => api.get<ApprovalPolicy[]>(`${APPROVALS}/policy/retrieve`),
+  /** A chain is its stages, in order; a person can belong to only one stage. */
+  createPolicy: (name: string, stages: ApprovalStage[]) => api.post<ApprovalPolicy>(`${APPROVALS}/policy/initiate`, { name, stages }),
+  requests: (status?: ApprovalStatus) => api.get<ApprovalRequest[]>(`${APPROVALS}/retrieve`, { status }),
+  /** The approver inbox: what this approver can decide now, oldest first. */
+  inbox: (approverId: string) => api.get<ApprovalRequest[]>(`${APPROVALS}/retrieve`, { pendingFor: approverId }),
+  /** The decision is cast by the signed-in executor (the X-Executor header), who must be a user id. */
+  decide: (id: string, outcome: 'APPROVE' | 'REJECT', comment?: string) =>
+    api.put<ApprovalRequest>(`${APPROVALS}/${id}/decision/capture`, { outcome, comment: comment || undefined }),
+  cancel: (id: string) => api.put(`${APPROVALS}/${id}/control/cancel`),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${APPROVALS}/${id}/audit-log/retrieve`),
+});

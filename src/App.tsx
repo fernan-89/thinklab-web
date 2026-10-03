@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSession } from './auth/session';
 import { Layout } from './components/Layout';
 import { AssetsPage } from './pages/Assets';
+import { ApprovalsPage } from './pages/Approvals';
 import { DiscoveryPage } from './pages/Discovery';
 import { LoginPage } from './pages/Login';
 import { SsoCompletePage } from './pages/SsoComplete';
@@ -19,6 +20,7 @@ export function App() {
       <Route path="/sso/complete" element={<SsoCompletePage />} />
       <Route element={session ? <Layout /> : <Navigate to="/login" replace />}>
         <Route path="/assets" element={<AssetsPage />} />
+        <Route path="/approvals" element={<ApprovalsPage />} />
         <Route path="/discovery" element={<DiscoveryPage />} />
         <Route path="/topology" element={<TopologyPage />} />
         <Route path="/audit" element={<AuditPage />} />
