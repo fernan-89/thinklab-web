@@ -6,6 +6,7 @@ import { DiscoveryPage } from './pages/Discovery';
 import { LoginPage } from './pages/Login';
 import { AuditPage } from './pages/Audit';
 import { PlanPage } from './pages/Plan';
+import { StockPage } from './pages/Stock';
 import { TopologyPage } from './pages/Topology';
 
 export function App() {
@@ -19,6 +20,7 @@ export function App() {
         <Route path="/topology" element={<TopologyPage />} />
         <Route path="/audit" element={<AuditPage />} />
         <Route path="/plan" element={<PlanPage />} />
+        <Route path="/stock" element={<StockPage />} />
       </Route>
       <Route path="*" element={<Navigate to={session ? '/assets' : '/login'} replace />} />
     </Routes>

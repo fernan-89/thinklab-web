@@ -154,3 +154,30 @@ export interface Entitlement {
   source: EntitlementSource;
   planCode?: string;
 }
+
+export type StockStatus = 'ACTIVE' | 'DISCONTINUED';
+
+export interface StockItem {
+  id: string;
+  organisationId: string;
+  sku: string;
+  name: string;
+  unit: string;
+  onHand: number;
+  reorderLevel: number;
+  /** True when the quantity on hand is at or under the reorder level. */
+  belowReorderLevel: boolean;
+  status: StockStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockEntry {
+  occurredAt: string;
+  action: string;
+  executor: string;
+  /** The signed change to the quantity on hand (0 for entries that do not move stock). */
+  quantity: number;
+  balanceAfter: number;
+  reason?: string;
+}

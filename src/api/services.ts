@@ -2,6 +2,7 @@ import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   Plan, PlanStatus, Subscription,
+  StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
 
@@ -11,6 +12,7 @@ const TOPOLOGY = '/it-topology-graph/v1';
 const AUTH = '/party-authentication/v1';
 const LEDGER = '/compliance-audit-ledger/v1';
 const BILLING = '/subscription-billing/v1';
+const STOCK = '/consumable-inventory/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -80,4 +82,19 @@ export const billingApi = (api: ApiClient) => ({
   current: () => api.get<Subscription>(`${BILLING}/current/retrieve`),
   plans: (status?: PlanStatus) => api.get<Plan[]>(`${BILLING}/plan/retrieve`, { status }),
   evaluate: (feature: string) => api.get<Entitlement>(`${BILLING}/entitlement/evaluate`, { feature }),
+});
+
+export type StockMovement = 'receive' | 'issue' | 'adjust';
+
+export const stockApi = (api: ApiClient) => ({
+  list: (status?: StockStatus) => api.get<StockItem[]>(`${STOCK}/retrieve`, { status }),
+  lowStock: () => api.get<StockItem[]>(`${STOCK}/low-stock/retrieve`),
+  retrieve: (id: string) => api.get<StockItem>(`${STOCK}/${id}/retrieve`),
+  history: (id: string) => api.get<StockEntry[]>(`${STOCK}/${id}/history/retrieve`),
+  create: (body: { sku: string; name: string; unit: string; reorderLevel: number; initialQuantity: number }) =>
+    api.post<StockItem>(`${STOCK}/initiate`, body),
+  receive: (id: string, quantity: number, reason?: string) => api.put(`${STOCK}/${id}/movement/receive`, { quantity, reason }),
+  issue: (id: string, quantity: number, reason?: string) => api.put(`${STOCK}/${id}/movement/issue`, { quantity, reason }),
+  adjust: (id: string, newQuantity: number, reason: string) => api.put(`${STOCK}/${id}/movement/adjust`, { newQuantity, reason }),
+  discontinue: (id: string) => api.put(`${STOCK}/${id}/control/discontinue`),
 });

@@ -156,3 +156,4 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .plan-card ul { margin: 0; padding-left: 1.1rem; }
 .plan-current { border-color: var(--accent, currentColor); }
 .page-plan h2 { margin: 1.4rem 0 0.5rem; }
+.check { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
