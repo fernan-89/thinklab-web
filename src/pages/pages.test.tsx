@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { fakeFetch, ORG, renderWithSession, type Handler } from '../test-utils';
+import { fakeFetch, jwtWith, ORG, renderWithSession, type Handler } from '../test-utils';
 import { App } from '../App';
 import { AssetsPage } from './Assets';
 import { AuditPage } from './Audit';
@@ -16,6 +16,7 @@ const asset = (over: Record<string, unknown> = {}) => ({
   id: 'a1', organisationId: ORG, name: 'Core switch', category: 'NETWORK_DEVICE', serialNumber: 'SN-1', status: 'READY',
   createdAt: '2026-10-01T10:00:00Z', updatedAt: '2026-10-01T10:00:00Z', ...over,
 });
+
 
 describe('LoginPage', () => {
   function renderLogin(handler: Handler = () => undefined) {
@@ -48,7 +49,7 @@ describe('LoginPage', () => {
   });
 
   it('signs in with an account and keeps the access token', async () => {
-    const calls = renderLogin((r) => (r.url.pathname.endsWith('/session/initiate') ? { body: { accessToken: 'jwt', tokenType: 'Bearer', expiresIn: 900, refreshToken: 'r' } } : undefined));
+    const calls = renderLogin((r) => (r.url.pathname.endsWith('/session/initiate') ? { body: { accessToken: jwtWith({ sub: 'user-42' }), tokenType: 'Bearer', expiresIn: 900, refreshToken: 'r' } } : undefined));
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('tab', { name: 'Account' }));
@@ -59,7 +60,12 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('assets page')).toBeInTheDocument();
     expect(calls[0].body).toEqual({ organisationId: ORG, email: 'a@b.co', password: 'secret' });
-    expect(JSON.parse(sessionStorage.getItem('thinklab.session')!).accessToken).toBe('jwt');
+    const stored = JSON.parse(sessionStorage.getItem('thinklab.session')!);
+    expect(stored.accessToken).toBe(jwtWith({ sub: 'user-42' }));
+    // Data minimisation: the executor sent to the platform is the opaque token subject, never the email.
+    expect(stored.executor).toBe('user-42');
+    expect(stored.displayName).toBe('a@b.co');
+    expect(calls.every((c) => c.headers.get('X-Executor') !== 'a@b.co')).toBe(true);
   });
 
   it('shows the problem returned for bad credentials and stays on the page', async () => {

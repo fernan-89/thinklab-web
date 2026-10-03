@@ -16,7 +16,7 @@ export function Layout() {
           <NavLink to="/audit">Audit</NavLink>
         </nav>
         <div className="who">
-          <span title={session?.organisationId}>{session?.executor}</span>
+          <span title={session?.organisationId}>{session?.displayName ?? session?.executor}</span>
           <button
             type="button"
             className="link"

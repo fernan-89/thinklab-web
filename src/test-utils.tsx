@@ -42,3 +42,7 @@ export function renderWithSession(ui: ReactElement, impl: typeof fetch, session:
     </MemoryRouter>,
   );
 }
+
+const b64url = (value: object) => btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+/** A syntactically valid (unsigned) JWT with the given claims, for tests of what the app reads from a token. */
+export const jwtWith = (claims: object) => `${b64url({ alg: 'ES256' })}.${b64url(claims)}.signature`;

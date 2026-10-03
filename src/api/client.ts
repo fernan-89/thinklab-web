@@ -1,6 +1,8 @@
 export interface Session {
   organisationId: string;
   executor: string;
+  /** Shown in the header only; never sent to the platform (the executor header carries the pseudonymous token subject). */
+  displayName?: string;
   /** Present when the platform runs with security on; the gateway then derives tenant and executor from it. */
   accessToken?: string;
 }

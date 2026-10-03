@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/services';
+import { subjectOf } from '../auth/jwt';
 import { useSession } from '../auth/session';
 import { ProblemBanner } from '../components/Feedback';
 
@@ -29,7 +30,8 @@ export function LoginPage() {
       } else {
         setBusy(true);
         const tokens = await authApi(api).signIn(organisation, email.trim(), password);
-        signIn({ organisationId: organisation, executor: email.trim(), accessToken: tokens.accessToken });
+        // The executor is the token's opaque subject, not the email: the email is personal data and must not travel into audit entries.
+        signIn({ organisationId: organisation, executor: subjectOf(tokens.accessToken) ?? 'user', displayName: email.trim(), accessToken: tokens.accessToken });
       }
       navigate('/assets');
     } catch (failure) {
