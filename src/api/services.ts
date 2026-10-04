@@ -1,7 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
-  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, Plan, PlanStatus, Subscription,
+  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Plan, PlanStatus, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
@@ -14,6 +14,7 @@ const LEDGER = '/compliance-audit-ledger/v1';
 const BILLING = '/subscription-billing/v1';
 const STOCK = '/consumable-inventory/v1';
 const APPROVALS = '/workflow-approval/v1';
+const INCIDENTS = '/it-incident-management/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -127,4 +128,42 @@ export const approvalApi = (api: ApiClient) => ({
     api.put<ApprovalRequest>(`${APPROVALS}/${id}/decision/capture`, { outcome, comment: comment || undefined }),
   cancel: (id: string) => api.put(`${APPROVALS}/${id}/control/cancel`),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${APPROVALS}/${id}/audit-log/retrieve`),
+});
+
+export type IncidentAction = 'acknowledge' | 'start' | 'resume' | 'close' | 'cancel';
+
+/** What a person can do next with an incident in each status (mirrors Incident's lifecycle; the API stays the authority). */
+export const INCIDENT_ACTIONS: Record<IncidentStatus, { action: IncidentAction; label: string }[]> = {
+  NEW: [{ action: 'acknowledge', label: 'Acknowledge' }, { action: 'cancel', label: 'Cancel' }],
+  ACKNOWLEDGED: [{ action: 'start', label: 'Start work' }, { action: 'cancel', label: 'Cancel' }],
+  IN_PROGRESS: [{ action: 'cancel', label: 'Cancel' }],
+  ON_HOLD: [{ action: 'resume', label: 'Resume' }, { action: 'cancel', label: 'Cancel' }],
+  RESOLVED: [{ action: 'close', label: 'Close' }],
+  CLOSED: [],
+  CANCELLED: [],
+};
+
+export interface IncidentInput {
+  title: string;
+  description: string;
+  impact: IncidentImpact;
+  urgency: IncidentImpact;
+  affectedAssetIds?: string[];
+  relatedChangeIds?: string[];
+}
+
+export const incidentApi = (api: ApiClient) => ({
+  list: (filter: { status?: IncidentStatus; priority?: IncidentPriority; assigneeId?: string; openOnly?: boolean }) =>
+    api.get<Incident[]>(`${INCIDENTS}/retrieve`, { status: filter.status, priority: filter.priority, assigneeId: filter.assigneeId, openOnly: filter.openOnly ? 'true' : undefined }),
+  retrieve: (id: string) => api.get<Incident>(`${INCIDENTS}/${id}/retrieve`),
+  /** The priority is not sent: the service derives it from impact and urgency. */
+  create: (body: IncidentInput & { requesterId?: string }) => api.post<Incident>(`${INCIDENTS}/initiate`, body),
+  update: (id: string, body: IncidentInput) => api.put(`${INCIDENTS}/${id}/update`, body),
+  assign: (id: string, assigneeId: string) => api.put(`${INCIDENTS}/${id}/assignment/update`, { assigneeId }),
+  control: (id: string, action: IncidentAction) => api.put(`${INCIDENTS}/${id}/control/${action}`),
+  hold: (id: string, reason: string) => api.put(`${INCIDENTS}/${id}/control/hold`, { reason }),
+  resolve: (id: string, resolutionCode: string, notes: string) => api.put(`${INCIDENTS}/${id}/control/resolve`, { resolutionCode, notes }),
+  reopen: (id: string, reason: string) => api.put(`${INCIDENTS}/${id}/control/reopen`, { reason }),
+  comment: (id: string, text: string, internal: boolean) => api.post(`${INCIDENTS}/${id}/comment/initiate`, { text, internal }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${INCIDENTS}/${id}/audit-log/retrieve`),
 });

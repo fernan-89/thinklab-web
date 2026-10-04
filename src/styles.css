@@ -213,3 +213,14 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .chain-done { color: var(--ok); border-color: var(--ok); }
 .chain-current { color: var(--accent); border-color: var(--accent); font-weight: 600; }
 .chain-ahead { color: var(--muted); }
+
+/* Incidents: priority and SLA read at a glance. */
+.badge-p1 { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+.badge-p2 { color: var(--warn); border-color: var(--warn); }
+.badge-p3 { color: var(--accent); border-color: var(--accent); }
+.badge-p4 { color: var(--muted); }
+.badge-new, .badge-acknowledged, .badge-in_progress { color: var(--accent); border-color: var(--accent); }
+.badge-on_hold { color: var(--warn); border-color: var(--warn); }
+.badge-resolved, .badge-closed, .badge-met { color: var(--ok); border-color: var(--ok); }
+.badge-breached { color: var(--danger-text); border-color: var(--danger-text); }
+.sla { white-space: nowrap; margin-right: 0.5rem; font-size: 0.85rem; }

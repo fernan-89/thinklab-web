@@ -231,3 +231,53 @@ export interface ApprovalRequest {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- Incidents (it-incident-management-service, ADR-030..033) ----
+
+export type IncidentImpact = 'LOW' | 'MEDIUM' | 'HIGH';
+export const INCIDENT_LEVELS: IncidentImpact[] = ['LOW', 'MEDIUM', 'HIGH'];
+export type IncidentPriority = 'P1' | 'P2' | 'P3' | 'P4';
+export const INCIDENT_PRIORITIES: IncidentPriority[] = ['P1', 'P2', 'P3', 'P4'];
+export type IncidentStatus = 'NEW' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'ON_HOLD' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+export const INCIDENT_STATUSES: IncidentStatus[] = ['NEW', 'ACKNOWLEDGED', 'IN_PROGRESS', 'ON_HOLD', 'RESOLVED', 'CLOSED', 'CANCELLED'];
+
+/** One SLA target: still running, met, or breached - worked out by the service when it is read. */
+export interface IncidentSla {
+  dueAt: string;
+  state: 'PENDING' | 'MET' | 'BREACHED';
+}
+
+export interface IncidentComment {
+  commentId: string;
+  author: string;
+  text: string;
+  internal: boolean;
+  createdAt: string;
+}
+
+export interface Incident {
+  id: string;
+  organisationId: string;
+  requesterId: string;
+  title: string;
+  description: string;
+  impact: IncidentImpact;
+  urgency: IncidentImpact;
+  priority: IncidentPriority;
+  status: IncidentStatus;
+  assigneeId?: string;
+  affectedAssetIds: string[];
+  relatedChangeIds: string[];
+  holdReason?: string;
+  resolutionCode?: string;
+  resolutionNotes?: string;
+  reopenCount: number;
+  /** Absent for a cancelled incident, which has no SLA to meet. */
+  response?: IncidentSla;
+  resolution?: IncidentSla;
+  acknowledgedAt?: string;
+  resolvedAt?: string;
+  comments: IncidentComment[];
+  createdAt: string;
+  updatedAt: string;
+}
