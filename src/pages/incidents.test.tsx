@@ -205,7 +205,7 @@ describe('working an incident', () => {
     expect(within(resolveForm).getByRole('button', { name: 'Apply' })).toBeDisabled();
     await user.type(within(resolveForm).getByLabelText('Resolution notes'), 'Swapped the switch');
     await user.click(within(resolveForm).getByRole('button', { name: 'Apply' }));
-    expect(await within(detail).findByRole('button', { name: 'Close' })).toBeInTheDocument();
+    expect(await within(within(detail).getByLabelText('Actions')).findByRole('button', { name: 'Close' })).toBeInTheDocument();
     expect(calls.find((c) => c.url.pathname.endsWith('/control/resolve'))!.body).toEqual({ resolutionCode: 'REPLACED', notes: 'Swapped the switch' });
   });
 

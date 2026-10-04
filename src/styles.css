@@ -227,3 +227,4 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .badge-submitted, .badge-in_fulfilment, .badge-published { color: var(--accent); border-color: var(--accent); }
 .badge-pending_approval, .badge-draft { color: var(--warn); border-color: var(--warn); }
 .badge-fulfilled { color: var(--ok); border-color: var(--ok); }
+.badge-returned { color: var(--warn); border-color: var(--warn); }

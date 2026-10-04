@@ -32,6 +32,7 @@ function server(initial: Record<string, unknown> = {}, catalog: Record<string, u
     if (custom) return custom;
     const path = r.url.pathname;
     if (path.includes('/catalog/')) {
+      if (r.method === 'GET' && path.split('/').length === 7) return { body: items.find((entry) => entry.id === path.split('/')[5]) };
       if (r.method === 'GET') {
         const status = r.url.searchParams.get('status');
         return { body: items.filter((entry) => !status || entry.status === status) };
@@ -53,9 +54,13 @@ function server(initial: Record<string, unknown> = {}, catalog: Record<string, u
     if (r.method === 'PUT') {
       const next: Record<string, string> = { 'start-fulfilment': 'IN_FULFILMENT', fulfil: 'FULFILLED', close: 'CLOSED', cancel: 'CANCELLED' };
       const action = path.split('/').pop() as string;
+      if (action === 'resubmit') {
+        current = { ...current, status: 'PENDING_APPROVAL', answers: (r.body as { answers: Record<string, string> }).answers, returnReason: undefined };
+        return { body: current };
+      }
       if (action === 'capture') {
-        const approved = (r.body as { outcome: string }).outcome === 'APPROVE';
-        current = { ...current, status: approved ? 'APPROVED' : 'REJECTED' };
+        const outcome = (r.body as { outcome: string; comment?: string }).outcome;
+        current = { ...current, status: outcome === 'APPROVE' ? 'APPROVED' : outcome === 'RETURN' ? 'RETURNED' : 'REJECTED', returnReason: outcome === 'RETURN' ? (r.body as { comment?: string }).comment : undefined };
         return { body: current };
       }
       if (next[action]) current = { ...current, status: next[action] };
@@ -288,6 +293,74 @@ describe('a request', () => {
     const { detail } = await open({ status: 'REJECTED', fulfilment: undefined, fulfilmentNotes: 'Never delivered' });
     expect(within(detail).getByText('Never delivered')).toBeInTheDocument();
     expect(within(detail).queryByText('Fulfilment')).not.toBeInTheDocument();
+  });
+});
+
+describe('returning a request', () => {
+  async function open(initial: Record<string, unknown>, extra: Handler = () => undefined) {
+    const fake = fakeFetch(server(initial, [item()], extra));
+    renderWithSession(<ServiceRequestsPage />, fake.impl, me);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'New laptop' }));
+    const detail = await screen.findByRole('complementary', { name: 'Request detail' });
+    await within(detail).findByText('Comments');
+    return { ...fake, user, detail };
+  }
+
+  it('an approver returns a waiting request with a comment that is required, and the reason is then shown', async () => {
+    const { user, detail, calls } = await open({ status: 'PENDING_APPROVAL', approvalRequestId: 'a1' });
+
+    await user.click(within(within(detail).getByLabelText('Actions')).getByRole('button', { name: 'Return for changes' }));
+    const form = within(detail).getByRole('form', { name: 'Request action' });
+    expect(within(form).getByRole('button', { name: 'Return' })).toBeDisabled();
+    await user.type(within(form).getByLabelText('What should the requester fix?'), 'Say which model');
+    await user.click(within(form).getByRole('button', { name: 'Return' }));
+
+    await waitFor(() => expect(calls.find((c) => c.url.pathname.endsWith('/approval/capture'))?.body).toEqual({ outcome: 'RETURN', comment: 'Say which model' }));
+    expect(await within(detail).findByText('Say which model')).toBeInTheDocument();
+    expect(within(detail).getByRole('status')).toHaveTextContent('Sent back for changes');
+    expect(within(within(detail).getByLabelText('Actions')).getByRole('button', { name: 'Edit and resubmit' })).toBeInTheDocument();
+  });
+
+  it('the requester edits the answers of a returned request and resubmits; a refusal is shown, and never mind closes the form', async () => {
+    let refuse = true;
+    const { user, detail, calls } = await open({ status: 'RETURNED', returnReason: 'Say which model', approvalRequestId: 'a1' }, (r) => (r.url.pathname.endsWith('/control/resubmit') && refuse
+      ? (refuse = false, { status: 409, body: { title: 'Conflict', error_code: 'ERR-SRQ-00409', detail: 'Item retired.' } }) : undefined));
+
+    expect(within(detail).getByRole('status')).toHaveTextContent('Say which model');
+    await user.click(within(within(detail).getByLabelText('Actions')).getByRole('button', { name: 'Edit and resubmit' }));
+    const form = await within(detail).findByRole('form', { name: 'Resubmit request' });
+    await waitFor(() => expect(within(form).getByLabelText('Which model?')).toBeInTheDocument());
+    expect(within(form).getByLabelText('Which model?')).toHaveValue('X1');
+    await user.click(within(form).getByRole('button', { name: 'Never mind' }));
+    expect(within(detail).queryByRole('form', { name: 'Resubmit request' })).not.toBeInTheDocument();
+
+    await user.click(within(within(detail).getByLabelText('Actions')).getByRole('button', { name: 'Edit and resubmit' }));
+    const again = await within(detail).findByRole('form', { name: 'Resubmit request' });
+    const model = await within(again).findByLabelText('Which model?');
+    await user.clear(model);
+    expect(within(again).getByRole('button', { name: 'Resubmit' })).toBeDisabled();
+    await user.type(model, ' X2 ');
+    await user.type(within(again).getByLabelText('Anything else? (optional)'), 'blue');
+    await user.click(within(again).getByRole('button', { name: 'Resubmit' }));
+    expect(await within(again).findByText('Item retired.')).toBeInTheDocument();
+    await user.click(within(again).getByRole('button', { name: 'Resubmit' }));
+
+    await waitFor(() => expect(calls.filter((c) => c.url.pathname.endsWith('/control/resubmit')).at(-1)?.body).toEqual({ answers: { model: 'X2', notes: 'blue' } }));
+    await waitFor(() => expect(within(detail).queryByRole('form', { name: 'Resubmit request' })).not.toBeInTheDocument());
+    await waitFor(() => expect(within(detail).queryByRole('button', { name: 'Edit and resubmit' })).not.toBeInTheDocument());
+  });
+
+  it('a returned request can be cancelled, and shows a problem when the item cannot be read', async () => {
+    const { user, detail, calls } = await open({ status: 'RETURNED', returnReason: 'fix' }, (r) => (r.method === 'GET' && r.url.pathname.endsWith('/catalog/k1/retrieve')
+      ? { status: 500, body: { title: 'Internal', error_code: 'ERR-INTERNAL-00500' } } : undefined));
+
+    await user.click(within(within(detail).getByLabelText('Actions')).getByRole('button', { name: 'Edit and resubmit' }));
+    const form = await within(detail).findByRole('form', { name: 'Resubmit request' });
+    expect(await within(form).findByText('ERR-INTERNAL-00500')).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Resubmit' })).toBeDisabled();
+    await user.click(within(within(detail).getByLabelText('Actions')).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(calls.some((c) => c.url.pathname.endsWith('/control/cancel'))).toBe(true));
   });
 });
 

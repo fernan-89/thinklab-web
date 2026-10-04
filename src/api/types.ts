@@ -310,8 +310,8 @@ export interface CatalogItem {
   updatedAt: string;
 }
 
-export type RequestStatus = 'SUBMITTED' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'IN_FULFILMENT' | 'FULFILLED' | 'CLOSED' | 'CANCELLED';
-export const REQUEST_STATUSES: RequestStatus[] = ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'IN_FULFILMENT', 'FULFILLED', 'CLOSED', 'CANCELLED'];
+export type RequestStatus = 'SUBMITTED' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'RETURNED' | 'IN_FULFILMENT' | 'FULFILLED' | 'CLOSED' | 'CANCELLED';
+export const REQUEST_STATUSES: RequestStatus[] = ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'RETURNED', 'IN_FULFILMENT', 'FULFILLED', 'CLOSED', 'CANCELLED'];
 
 /** The fulfilment target: still running, met, or breached - worked out by the service when it is read. */
 export interface RequestSla {
@@ -336,6 +336,8 @@ export interface ServiceRequest {
   fulfilment?: RequestSla;
   startedAt?: string;
   fulfilledAt?: string;
+  /** What an approver asked to fix, while the request is RETURNED. */
+  returnReason?: string;
   fulfilmentNotes?: string;
   comments: RequestComment[];
   createdAt: string;

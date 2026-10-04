@@ -184,7 +184,7 @@ function NewRequestForm({ me, onCreated, onCancel }: { me: string; onCreated: (r
   );
 }
 
-type Pending = 'fulfil' | 'approve' | 'reject' | undefined;
+type Pending = 'fulfil' | 'approve' | 'reject' | 'return' | undefined;
 
 function RequestDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
   const { api } = useSession();
@@ -205,6 +205,7 @@ function RequestDetail({ id, onClose, onChanged }: { id: string; onClose: () => 
   const [internal, setInternal] = useState(false);
   const [actionError, setActionError] = useState<Error>();
   const [busy, setBusy] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
 
   const request = detail.data?.request;
 
@@ -231,6 +232,7 @@ function RequestDetail({ id, onClose, onChanged }: { id: string; onClose: () => 
     if (pending === 'fulfil') void run(() => requests.fulfil(id, text.trim()));
     else if (pending === 'approve') void run(() => requests.decide(id, 'APPROVE', text.trim()));
     else if (pending === 'reject') void run(() => requests.decide(id, 'REJECT', text.trim()));
+    else if (pending === 'return') void run(() => requests.decide(id, 'RETURN', text.trim()));
   }
 
   return (
@@ -243,6 +245,9 @@ function RequestDetail({ id, onClose, onChanged }: { id: string; onClose: () => 
       {request && (
         <>
           <p><StatusBadge status={request.status} /> <Sla sla={request.fulfilment} /></p>
+          {request.status === 'RETURNED' && request.returnReason && (
+            <div className="banner" role="status"><strong>Sent back for changes:</strong> {request.returnReason}</div>
+          )}
           <dl>
             <dt>Item</dt><dd><code>{request.catalogItemCode}</code></dd>
             <dt>For</dt><dd><code>{short(request.requesterId)}</code></dd>
@@ -256,21 +261,33 @@ function RequestDetail({ id, onClose, onChanged }: { id: string; onClose: () => 
               <>
                 <button type="button" disabled={busy} onClick={() => setPending('approve')}>Approve</button>
                 <button type="button" disabled={busy} onClick={() => setPending('reject')}>Reject</button>
+                <button type="button" disabled={busy} onClick={() => setPending('return')}>Return for changes</button>
               </>
             )}
             {REQUEST_ACTIONS[request.status].map(({ action, label }) => (
               <button key={action} type="button" disabled={busy} onClick={() => void run(() => requests.control(id, action as RequestAction))}>{label}</button>
             ))}
             {request.status === 'IN_FULFILMENT' && <button type="button" disabled={busy} onClick={() => setPending('fulfil')}>Fulfil</button>}
+            {request.status === 'RETURNED' && <button type="button" disabled={busy} onClick={() => setResubmitting(true)}>Edit and resubmit</button>}
           </div>
+
+          {resubmitting && request.status === 'RETURNED' && (
+            <ResubmitForm
+              request={request}
+              onCancel={() => setResubmitting(false)}
+              onDone={() => { setResubmitting(false); detail.reload(); onChanged(); }}
+            />
+          )}
 
           {pending && (
             <form className="form" aria-label="Request action" onSubmit={submitPending}>
-              <label>{pending === 'fulfil' ? 'What was delivered?' : 'Comment (optional)'}
+              <label>{pending === 'fulfil' ? 'What was delivered?' : pending === 'return' ? 'What should the requester fix?' : 'Comment (optional)'}
                 <textarea value={text} maxLength={pending === 'fulfil' ? 4000 : 500} onChange={(e) => setText(e.target.value)} />
               </label>
               <div className="actions">
-                <button type="submit" className="primary" disabled={busy || (pending === 'fulfil' && text.trim() === '')}>{pending === 'fulfil' ? 'Fulfil' : pending === 'approve' ? 'Approve' : 'Reject'}</button>
+                <button type="submit" className="primary" disabled={busy || ((pending === 'fulfil' || pending === 'return') && text.trim() === '')}>
+                  {pending === 'fulfil' ? 'Fulfil' : pending === 'approve' ? 'Approve' : pending === 'return' ? 'Return' : 'Reject'}
+                </button>
                 <button type="button" onClick={() => setPending(undefined)}>Never mind</button>
               </div>
             </form>
@@ -445,6 +462,50 @@ function CatalogForm({ item, onSaved, onCancel }: { item?: CatalogItem; onSaved:
       <div className="actions">
         <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Save'}</button>
         <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </form>
+  );
+}
+
+/** A returned request: the questions of its item, answered again (starting from what was said before), then a new approval starts. */
+function ResubmitForm({ request, onDone, onCancel }: { request: ServiceRequest; onDone: () => void; onCancel: () => void }) {
+  const { api } = useSession();
+  const requests = serviceRequestApi(api);
+  const item = useAsync(() => requests.catalog.retrieve(request.catalogItemId), [request.catalogItemId]);
+  const [answers, setAnswers] = useState<Record<string, string>>(request.answers);
+  const [error, setError] = useState<Error>();
+  const [busy, setBusy] = useState(false);
+  const fields = item.data?.fields ?? [];
+  const missing = fields.some((field) => field.required && (answers[field.key] ?? '').trim() === '');
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!item.data || missing) return;
+    const given = Object.fromEntries(Object.entries(answers).filter(([key, value]) => value.trim() !== '' && fields.some((field) => field.key === key)).map(([key, value]) => [key, value.trim()]));
+    setBusy(true);
+    setError(undefined);
+    try {
+      await requests.resubmit(request.id, given);
+      onDone();
+    } catch (failure) {
+      setError(toError(failure));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="form" aria-label="Resubmit request" onSubmit={submit}>
+      <ProblemBanner error={item.error ?? error} />
+      {fields.map((field) => (
+        <label key={field.key}>{field.label}{field.required ? '' : ' (optional)'}
+          <input value={answers[field.key] ?? ''} maxLength={500} onChange={(e) => setAnswers({ ...answers, [field.key]: e.target.value })} />
+        </label>
+      ))}
+      <p className="muted">Resubmitting starts the approval again from the first stage.</p>
+      <div className="actions">
+        <button type="submit" className="primary" disabled={!item.data || missing || busy}>{busy ? 'Sending...' : 'Resubmit'}</button>
+        <button type="button" onClick={onCancel}>Never mind</button>
       </div>
     </form>
   );

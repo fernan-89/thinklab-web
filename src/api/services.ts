@@ -175,6 +175,7 @@ export type RequestAction = 'start-fulfilment' | 'close' | 'cancel';
 export const REQUEST_ACTIONS: Record<RequestStatus, { action: RequestAction; label: string }[]> = {
   SUBMITTED: [{ action: 'start-fulfilment', label: 'Start fulfilment' }, { action: 'cancel', label: 'Cancel' }],
   PENDING_APPROVAL: [{ action: 'cancel', label: 'Cancel' }],
+  RETURNED: [{ action: 'cancel', label: 'Cancel' }],
   APPROVED: [{ action: 'start-fulfilment', label: 'Start fulfilment' }, { action: 'cancel', label: 'Cancel' }],
   REJECTED: [],
   IN_FULFILMENT: [{ action: 'cancel', label: 'Cancel' }],
@@ -196,6 +197,7 @@ export interface CatalogItemInput {
 export const serviceRequestApi = (api: ApiClient) => ({
   catalog: {
     list: (status?: CatalogItemStatus) => api.get<CatalogItem[]>(`${REQUESTS}/catalog/retrieve`, { status }),
+    retrieve: (id: string) => api.get<CatalogItem>(`${REQUESTS}/catalog/${id}/retrieve`),
     create: (body: CatalogItemInput) => api.post<CatalogItem>(`${REQUESTS}/catalog/initiate`, body),
     update: (id: string, body: CatalogItemInput) => api.put(`${REQUESTS}/catalog/${id}/update`, body),
     control: (id: string, action: 'publish' | 'retire') => api.put(`${REQUESTS}/catalog/${id}/control/${action}`),
@@ -206,9 +208,11 @@ export const serviceRequestApi = (api: ApiClient) => ({
   create: (body: { catalogItemId: string; answers: Record<string, string>; requesterId?: string }) => api.post<ServiceRequest>(`${REQUESTS}/initiate`, body),
   assign: (id: string, assigneeId: string) => api.put(`${REQUESTS}/${id}/assignment/update`, { assigneeId }),
   /** The decision is cast by the signed-in executor (the X-Executor header), who must be a user id. */
-  decide: (id: string, outcome: 'APPROVE' | 'REJECT', comment?: string) =>
+  decide: (id: string, outcome: 'APPROVE' | 'REJECT' | 'RETURN', comment?: string) =>
     api.put<ServiceRequest>(`${REQUESTS}/${id}/approval/capture`, { outcome, comment: comment || undefined }),
   control: (id: string, action: RequestAction) => api.put(`${REQUESTS}/${id}/control/${action}`),
+  /** Replaces the answers of a RETURNED request and starts a new approval (ADR-035). */
+  resubmit: (id: string, answers: Record<string, string>) => api.put<ServiceRequest>(`${REQUESTS}/${id}/control/resubmit`, { answers }),
   fulfil: (id: string, notes: string) => api.put(`${REQUESTS}/${id}/control/fulfil`, { notes }),
   comment: (id: string, text: string, internal: boolean) => api.post(`${REQUESTS}/${id}/comment/initiate`, { text, internal }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${REQUESTS}/${id}/audit-log/retrieve`),
