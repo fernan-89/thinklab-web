@@ -5,6 +5,7 @@ import { AssetsPage } from './pages/Assets';
 import { ApprovalsPage } from './pages/Approvals';
 import { DiscoveryPage } from './pages/Discovery';
 import { IncidentsPage } from './pages/Incidents';
+import { ProblemsPage } from './pages/Problems';
 import { ServiceRequestsPage } from './pages/ServiceRequests';
 import { LoginPage } from './pages/Login';
 import { SsoCompletePage } from './pages/SsoComplete';
@@ -24,6 +25,7 @@ export function App() {
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/approvals" element={<ApprovalsPage />} />
         <Route path="/incidents" element={<IncidentsPage />} />
+        <Route path="/problems" element={<ProblemsPage />} />
         <Route path="/requests" element={<ServiceRequestsPage />} />
         <Route path="/discovery" element={<DiscoveryPage />} />
         <Route path="/topology" element={<TopologyPage />} />

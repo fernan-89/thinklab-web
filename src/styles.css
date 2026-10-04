@@ -228,3 +228,7 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .badge-pending_approval, .badge-draft { color: var(--warn); border-color: var(--warn); }
 .badge-fulfilled { color: var(--ok); border-color: var(--ok); }
 .badge-returned { color: var(--warn); border-color: var(--warn); }
+
+/* Problems: the known error stands out, because it is what people fall back on. */
+.badge-under_investigation { color: var(--accent); border-color: var(--accent); }
+.badge-known_error { color: var(--warn); border-color: var(--warn); font-weight: 700; }

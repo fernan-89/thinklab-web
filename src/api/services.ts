@@ -1,7 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
-  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Plan, PlanStatus, RequestStatus, ServiceRequest, Subscription,
+  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
@@ -16,6 +16,7 @@ const STOCK = '/consumable-inventory/v1';
 const APPROVALS = '/workflow-approval/v1';
 const INCIDENTS = '/it-incident-management/v1';
 const REQUESTS = '/it-service-request/v1';
+const PROBLEMS = '/it-problem-management/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -216,4 +217,43 @@ export const serviceRequestApi = (api: ApiClient) => ({
   fulfil: (id: string, notes: string) => api.put(`${REQUESTS}/${id}/control/fulfil`, { notes }),
   comment: (id: string, text: string, internal: boolean) => api.post(`${REQUESTS}/${id}/comment/initiate`, { text, internal }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${REQUESTS}/${id}/audit-log/retrieve`),
+});
+
+export type ProblemAction = 'investigate' | 'known-error' | 'close' | 'cancel';
+
+/** What a person can do next with a problem in each status (mirrors Problem's lifecycle; the API stays the authority). Resolve, reopen and the analysis have their own forms. */
+export const PROBLEM_ACTIONS: Record<ProblemStatus, { action: ProblemAction; label: string }[]> = {
+  NEW: [{ action: 'investigate', label: 'Start investigation' }, { action: 'cancel', label: 'Cancel' }],
+  UNDER_INVESTIGATION: [{ action: 'known-error', label: 'Declare known error' }, { action: 'cancel', label: 'Cancel' }],
+  KNOWN_ERROR: [{ action: 'cancel', label: 'Cancel' }],
+  RESOLVED: [{ action: 'close', label: 'Close' }],
+  CLOSED: [],
+  CANCELLED: [],
+};
+
+export interface ProblemInput {
+  title: string;
+  description: string;
+  priority: ProblemPriority;
+  relatedIncidentIds?: string[];
+  relatedChangeIds?: string[];
+  affectedAssetIds?: string[];
+}
+
+export const problemApi = (api: ApiClient) => ({
+  list: (filter: { status?: ProblemStatus; priority?: ProblemPriority; assigneeId?: string; incidentId?: string; openOnly?: boolean }) =>
+    api.get<Problem[]>(`${PROBLEMS}/retrieve`, {
+      status: filter.status, priority: filter.priority, assigneeId: filter.assigneeId, incidentId: filter.incidentId, openOnly: filter.openOnly ? 'true' : undefined,
+    }),
+  retrieve: (id: string) => api.get<Problem>(`${PROBLEMS}/${id}/retrieve`),
+  create: (body: ProblemInput) => api.post<Problem>(`${PROBLEMS}/initiate`, body),
+  update: (id: string, body: ProblemInput) => api.put(`${PROBLEMS}/${id}/update`, body),
+  assign: (id: string, assigneeId: string) => api.put(`${PROBLEMS}/${id}/assignment/update`, { assigneeId }),
+  /** Either field may be left out: it keeps its value. */
+  analysis: (id: string, body: { rootCause?: string; workaround?: string }) => api.put(`${PROBLEMS}/${id}/analysis/update`, body),
+  control: (id: string, action: ProblemAction) => api.put(`${PROBLEMS}/${id}/control/${action}`),
+  resolve: (id: string, resolution: string) => api.put(`${PROBLEMS}/${id}/control/resolve`, { resolution }),
+  reopen: (id: string, reason: string) => api.put(`${PROBLEMS}/${id}/control/reopen`, { reason }),
+  comment: (id: string, text: string) => api.post(`${PROBLEMS}/${id}/comment/initiate`, { text }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${PROBLEMS}/${id}/audit-log/retrieve`),
 });

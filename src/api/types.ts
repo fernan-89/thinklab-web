@@ -343,3 +343,37 @@ export interface ServiceRequest {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- Problems (it-problem-management-service, ADR-030..033) ----
+
+export type ProblemPriority = 'P1' | 'P2' | 'P3' | 'P4';
+export const PROBLEM_PRIORITIES: ProblemPriority[] = ['P1', 'P2', 'P3', 'P4'];
+export type ProblemStatus = 'NEW' | 'UNDER_INVESTIGATION' | 'KNOWN_ERROR' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+export const PROBLEM_STATUSES: ProblemStatus[] = ['NEW', 'UNDER_INVESTIGATION', 'KNOWN_ERROR', 'RESOLVED', 'CLOSED', 'CANCELLED'];
+
+export interface ProblemComment {
+  commentId: string;
+  author: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface Problem {
+  id: string;
+  organisationId: string;
+  title: string;
+  description: string;
+  priority: ProblemPriority;
+  status: ProblemStatus;
+  assigneeId?: string;
+  relatedIncidentIds: string[];
+  relatedChangeIds: string[];
+  affectedAssetIds: string[];
+  rootCause?: string;
+  workaround?: string;
+  resolution?: string;
+  reopenCount: number;
+  comments: ProblemComment[];
+  createdAt: string;
+  updatedAt: string;
+}
