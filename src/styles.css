@@ -224,3 +224,6 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .badge-resolved, .badge-closed, .badge-met { color: var(--ok); border-color: var(--ok); }
 .badge-breached { color: var(--danger-text); border-color: var(--danger-text); }
 .sla { white-space: nowrap; margin-right: 0.5rem; font-size: 0.85rem; }
+.badge-submitted, .badge-in_fulfilment, .badge-published { color: var(--accent); border-color: var(--accent); }
+.badge-pending_approval, .badge-draft { color: var(--warn); border-color: var(--warn); }
+.badge-fulfilled { color: var(--ok); border-color: var(--ok); }

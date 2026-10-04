@@ -281,3 +281,63 @@ export interface Incident {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- Service catalog and requests (it-service-request-service, ADR-030..034) ----
+
+export type CatalogItemStatus = 'DRAFT' | 'PUBLISHED' | 'RETIRED';
+export const CATALOG_STATUSES: CatalogItemStatus[] = ['DRAFT', 'PUBLISHED', 'RETIRED'];
+
+/** One question a requester answers when ordering the item. */
+export interface CatalogField {
+  key: string;
+  label: string;
+  required: boolean;
+}
+
+export interface CatalogItem {
+  id: string;
+  organisationId: string;
+  code: string;
+  name: string;
+  description?: string;
+  category?: string;
+  fields: CatalogField[];
+  fulfilmentTargetHours: number;
+  /** Present when the item needs approval first (a policy on workflow-approval, possibly a chain). */
+  approvalPolicyId?: string;
+  status: CatalogItemStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type RequestStatus = 'SUBMITTED' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'IN_FULFILMENT' | 'FULFILLED' | 'CLOSED' | 'CANCELLED';
+export const REQUEST_STATUSES: RequestStatus[] = ['SUBMITTED', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'IN_FULFILMENT', 'FULFILLED', 'CLOSED', 'CANCELLED'];
+
+/** The fulfilment target: still running, met, or breached - worked out by the service when it is read. */
+export interface RequestSla {
+  dueAt: string;
+  state: 'PENDING' | 'MET' | 'BREACHED';
+}
+
+export type RequestComment = IncidentComment;
+
+export interface ServiceRequest {
+  id: string;
+  organisationId: string;
+  requesterId: string;
+  catalogItemId: string;
+  catalogItemCode: string;
+  catalogItemName: string;
+  answers: Record<string, string>;
+  status: RequestStatus;
+  assigneeId?: string;
+  approvalRequestId?: string;
+  /** Absent for a cancelled or rejected request, which owes no SLA. */
+  fulfilment?: RequestSla;
+  startedAt?: string;
+  fulfilledAt?: string;
+  fulfilmentNotes?: string;
+  comments: RequestComment[];
+  createdAt: string;
+  updatedAt: string;
+}

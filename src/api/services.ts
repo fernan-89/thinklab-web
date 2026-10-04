@@ -1,7 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
-  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Plan, PlanStatus, Subscription,
+  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Plan, PlanStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
@@ -15,6 +15,7 @@ const BILLING = '/subscription-billing/v1';
 const STOCK = '/consumable-inventory/v1';
 const APPROVALS = '/workflow-approval/v1';
 const INCIDENTS = '/it-incident-management/v1';
+const REQUESTS = '/it-service-request/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -166,4 +167,49 @@ export const incidentApi = (api: ApiClient) => ({
   reopen: (id: string, reason: string) => api.put(`${INCIDENTS}/${id}/control/reopen`, { reason }),
   comment: (id: string, text: string, internal: boolean) => api.post(`${INCIDENTS}/${id}/comment/initiate`, { text, internal }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${INCIDENTS}/${id}/audit-log/retrieve`),
+});
+
+export type RequestAction = 'start-fulfilment' | 'close' | 'cancel';
+
+/** What a person can do next with a request in each status (mirrors ServiceRequest's lifecycle; the API stays the authority). Fulfil and the approval decision have their own forms. */
+export const REQUEST_ACTIONS: Record<RequestStatus, { action: RequestAction; label: string }[]> = {
+  SUBMITTED: [{ action: 'start-fulfilment', label: 'Start fulfilment' }, { action: 'cancel', label: 'Cancel' }],
+  PENDING_APPROVAL: [{ action: 'cancel', label: 'Cancel' }],
+  APPROVED: [{ action: 'start-fulfilment', label: 'Start fulfilment' }, { action: 'cancel', label: 'Cancel' }],
+  REJECTED: [],
+  IN_FULFILMENT: [{ action: 'cancel', label: 'Cancel' }],
+  FULFILLED: [{ action: 'close', label: 'Close' }],
+  CLOSED: [],
+  CANCELLED: [],
+};
+
+export interface CatalogItemInput {
+  code?: string;
+  name: string;
+  description?: string;
+  category?: string;
+  fields: CatalogField[];
+  fulfilmentTargetHours: number;
+  approvalPolicyId?: string;
+}
+
+export const serviceRequestApi = (api: ApiClient) => ({
+  catalog: {
+    list: (status?: CatalogItemStatus) => api.get<CatalogItem[]>(`${REQUESTS}/catalog/retrieve`, { status }),
+    create: (body: CatalogItemInput) => api.post<CatalogItem>(`${REQUESTS}/catalog/initiate`, body),
+    update: (id: string, body: CatalogItemInput) => api.put(`${REQUESTS}/catalog/${id}/update`, body),
+    control: (id: string, action: 'publish' | 'retire') => api.put(`${REQUESTS}/catalog/${id}/control/${action}`),
+  },
+  list: (filter: { status?: RequestStatus; assigneeId?: string; openOnly?: boolean }) =>
+    api.get<ServiceRequest[]>(`${REQUESTS}/retrieve`, { status: filter.status, assigneeId: filter.assigneeId, openOnly: filter.openOnly ? 'true' : undefined }),
+  retrieve: (id: string) => api.get<ServiceRequest>(`${REQUESTS}/${id}/retrieve`),
+  create: (body: { catalogItemId: string; answers: Record<string, string>; requesterId?: string }) => api.post<ServiceRequest>(`${REQUESTS}/initiate`, body),
+  assign: (id: string, assigneeId: string) => api.put(`${REQUESTS}/${id}/assignment/update`, { assigneeId }),
+  /** The decision is cast by the signed-in executor (the X-Executor header), who must be a user id. */
+  decide: (id: string, outcome: 'APPROVE' | 'REJECT', comment?: string) =>
+    api.put<ServiceRequest>(`${REQUESTS}/${id}/approval/capture`, { outcome, comment: comment || undefined }),
+  control: (id: string, action: RequestAction) => api.put(`${REQUESTS}/${id}/control/${action}`),
+  fulfil: (id: string, notes: string) => api.put(`${REQUESTS}/${id}/control/fulfil`, { notes }),
+  comment: (id: string, text: string, internal: boolean) => api.post(`${REQUESTS}/${id}/comment/initiate`, { text, internal }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${REQUESTS}/${id}/audit-log/retrieve`),
 });
