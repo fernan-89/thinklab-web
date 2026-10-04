@@ -377,3 +377,34 @@ export interface Problem {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- Knowledge base (it-knowledge-base-service, ADR-030..033) ----
+
+export type ArticleStatus = 'DRAFT' | 'IN_REVIEW' | 'PUBLISHED' | 'RETIRED';
+export const ARTICLE_STATUSES: ArticleStatus[] = ['DRAFT', 'IN_REVIEW', 'PUBLISHED', 'RETIRED'];
+export type ArticleVisibility = 'INTERNAL' | 'PUBLIC';
+export const ARTICLE_VISIBILITIES: ArticleVisibility[] = ['INTERNAL', 'PUBLIC'];
+
+/** An article as read. For a REQUESTER the people, the review comment and the links are absent. */
+export interface Article {
+  id: string;
+  organisationId: string;
+  /** Shared by every version of the same article. */
+  articleKey: string;
+  version: number;
+  title: string;
+  body: string;
+  category?: string;
+  keywords: string[];
+  visibility: ArticleVisibility;
+  status: ArticleStatus;
+  authorId?: string;
+  reviewerId?: string;
+  /** What the reviewer asked to change, while the article is back in DRAFT. */
+  reviewComment?: string;
+  publishedAt?: string;
+  relatedProblemIds?: string[];
+  relatedIncidentIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+}

@@ -1,7 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
-  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
+  ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
 } from './types';
@@ -17,6 +17,7 @@ const APPROVALS = '/workflow-approval/v1';
 const INCIDENTS = '/it-incident-management/v1';
 const REQUESTS = '/it-service-request/v1';
 const PROBLEMS = '/it-problem-management/v1';
+const KNOWLEDGE = '/it-knowledge-base/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -256,4 +257,47 @@ export const problemApi = (api: ApiClient) => ({
   reopen: (id: string, reason: string) => api.put(`${PROBLEMS}/${id}/control/reopen`, { reason }),
   comment: (id: string, text: string) => api.post(`${PROBLEMS}/${id}/comment/initiate`, { text }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${PROBLEMS}/${id}/audit-log/retrieve`),
+});
+
+export type ArticleAction = 'submit' | 'publish' | 'retire';
+
+/** What a person can do next with an article in each status (mirrors Article's lifecycle; the API stays the authority). Return, edit and new version have their own forms. */
+export const ARTICLE_ACTIONS: Record<ArticleStatus, { action: ArticleAction; label: string }[]> = {
+  DRAFT: [{ action: 'submit', label: 'Submit for review' }, { action: 'retire', label: 'Retire' }],
+  IN_REVIEW: [{ action: 'publish', label: 'Publish' }, { action: 'retire', label: 'Retire' }],
+  PUBLISHED: [{ action: 'retire', label: 'Retire' }],
+  RETIRED: [],
+};
+
+export interface ArticleInput {
+  title: string;
+  body: string;
+  category?: string;
+  keywords: string[];
+  visibility: ArticleVisibility;
+  relatedProblemIds?: string[];
+  relatedIncidentIds?: string[];
+}
+
+export interface ArticleFilter {
+  q?: string;
+  status?: ArticleStatus;
+  visibility?: ArticleVisibility;
+  keyword?: string;
+  problemId?: string;
+  incidentId?: string;
+}
+
+export const knowledgeApi = (api: ApiClient) => ({
+  list: (filter: ArticleFilter) => api.get<Article[]>(`${KNOWLEDGE}/retrieve`, { ...filter }),
+  retrieve: (id: string) => api.get<Article>(`${KNOWLEDGE}/${id}/retrieve`),
+  versions: (id: string) => api.get<Article[]>(`${KNOWLEDGE}/${id}/versions/retrieve`),
+  create: (body: ArticleInput) => api.post<Article>(`${KNOWLEDGE}/initiate`, body),
+  update: (id: string, body: ArticleInput) => api.put(`${KNOWLEDGE}/${id}/update`, body),
+  control: (id: string, action: ArticleAction) => api.put(`${KNOWLEDGE}/${id}/control/${action}`),
+  /** The reviewer (who must not be the author) sends it back with what to change. */
+  returnForChanges: (id: string, comment: string) => api.put(`${KNOWLEDGE}/${id}/control/return`, { comment }),
+  /** A new draft version of a published article; the published one keeps serving until the new one is published. */
+  newVersion: (id: string) => api.post<Article>(`${KNOWLEDGE}/${id}/version/initiate`),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${KNOWLEDGE}/${id}/audit-log/retrieve`),
 });

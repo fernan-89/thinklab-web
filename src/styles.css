@@ -232,3 +232,9 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 /* Problems: the known error stands out, because it is what people fall back on. */
 .badge-under_investigation { color: var(--accent); border-color: var(--accent); }
 .badge-known_error { color: var(--warn); border-color: var(--warn); font-weight: 700; }
+
+/* Knowledge base: the review state is what matters at a glance; the article body keeps its line breaks. */
+.badge-in_review { color: var(--warn); border-color: var(--warn); }
+.badge-internal { color: var(--muted); }
+.badge-public { color: var(--ok); border-color: var(--ok); }
+.article-body { white-space: pre-wrap; }
