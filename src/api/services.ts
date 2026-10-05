@@ -1,6 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
+  Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
@@ -18,6 +19,7 @@ const INCIDENTS = '/it-incident-management/v1';
 const REQUESTS = '/it-service-request/v1';
 const PROBLEMS = '/it-problem-management/v1';
 const KNOWLEDGE = '/it-knowledge-base/v1';
+const CONNECTOR = '/it-external-ticketing/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -300,4 +302,33 @@ export const knowledgeApi = (api: ApiClient) => ({
   /** A new draft version of a published article; the published one keeps serving until the new one is published. */
   newVersion: (id: string) => api.post<Article>(`${KNOWLEDGE}/${id}/version/initiate`),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${KNOWLEDGE}/${id}/audit-log/retrieve`),
+});
+
+export interface ConnectionInput {
+  name: string;
+  provider: ConnectionProvider;
+  baseUrl: string;
+  /** The NAME of the environment variable that holds the whole Authorization header value (never the value itself). */
+  secretRef: string;
+  /** The NAME of the environment variable that holds the webhook token. */
+  webhookSecretRef: string;
+  integrationActor: string;
+  /** Jira only. */
+  projectKey?: string;
+}
+
+export const connectorApi = (api: ApiClient) => ({
+  connections: () => api.get<Connection[]>(`${CONNECTOR}/connection/retrieve`),
+  createConnection: (body: ConnectionInput) => api.post<Connection>(`${CONNECTOR}/connection/initiate`, body),
+  switchConnection: (id: string, action: 'enable' | 'disable') => api.put(`${CONNECTOR}/connection/${id}/control/${action}`),
+  checkConnection: (id: string) => api.put<ConnectionCheck>(`${CONNECTOR}/connection/${id}/check/execute`),
+  connectionAuditLog: (id: string) => api.get<AuditEntry[]>(`${CONNECTOR}/connection/${id}/audit-log/retrieve`),
+  links: (filter: { connectionId?: string; subjectType?: LinkSubjectType; subjectId?: string; status?: LinkStatus }) =>
+    api.get<TicketLink[]>(`${CONNECTOR}/retrieve`, {
+      connectionId: filter.connectionId, subjectType: filter.subjectType, subjectId: filter.subjectId, status: filter.status,
+    }),
+  link: (body: { connectionId: string; subjectType: LinkSubjectType; subjectId: string }) => api.post<TicketLink>(`${CONNECTOR}/initiate`, body),
+  sync: (id: string) => api.put<TicketLink>(`${CONNECTOR}/${id}/sync/execute`),
+  detach: (id: string) => api.put(`${CONNECTOR}/${id}/control/detach`),
+  linkAuditLog: (id: string) => api.get<AuditEntry[]>(`${CONNECTOR}/${id}/audit-log/retrieve`),
 });

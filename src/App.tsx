@@ -6,6 +6,7 @@ import { ApprovalsPage } from './pages/Approvals';
 import { DiscoveryPage } from './pages/Discovery';
 import { IncidentsPage } from './pages/Incidents';
 import { KnowledgePage } from './pages/Knowledge';
+import { IntegrationsPage } from './pages/Integrations';
 import { ProblemsPage } from './pages/Problems';
 import { ServiceRequestsPage } from './pages/ServiceRequests';
 import { LoginPage } from './pages/Login';
@@ -25,6 +26,7 @@ export function App() {
       <Route element={session ? <Layout /> : <Navigate to="/login" replace />}>
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/approvals" element={<ApprovalsPage />} />
+        <Route path="/integrations" element={<IntegrationsPage />} />
         <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/problems" element={<ProblemsPage />} />

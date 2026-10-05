@@ -408,3 +408,60 @@ export interface Article {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- External ticketing (it-external-ticketing-service, ADR-030..033) ----
+
+export type ConnectionProvider = 'JIRA' | 'SERVICENOW';
+export const CONNECTION_PROVIDERS: ConnectionProvider[] = ['JIRA', 'SERVICENOW'];
+export type ConnectionStatus = 'ACTIVE' | 'DISABLED';
+
+/** A registered ServiceNow or Jira instance. It names the environment variables that hold its secrets and never carries a secret. */
+export interface Connection {
+  id: string;
+  organisationId: string;
+  name: string;
+  provider: ConnectionProvider;
+  baseUrl: string;
+  secretRef: string;
+  secretConfigured: boolean;
+  webhookSecretRef: string;
+  webhookSecretConfigured: boolean;
+  integrationActor: string;
+  projectKey?: string;
+  outboundStatus: Record<string, string>;
+  inboundActions: Record<string, string>;
+  status: ConnectionStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectionCheck {
+  secretConfigured: boolean;
+  webhookSecretConfigured: boolean;
+  reachable: boolean;
+  problem?: string;
+}
+
+export type LinkStatus = 'PENDING' | 'LINKED' | 'FAILED' | 'DETACHED';
+export const LINK_STATUSES: LinkStatus[] = ['PENDING', 'LINKED', 'FAILED', 'DETACHED'];
+export type LinkSubjectType = 'INCIDENT' | 'SERVICE_REQUEST' | 'PROBLEM';
+export const LINK_SUBJECT_TYPES: LinkSubjectType[] = ['INCIDENT', 'SERVICE_REQUEST', 'PROBLEM'];
+
+/** The pairing of a platform item with a ticket at a provider. Only ids, statuses and times: never the ticket text. */
+export interface TicketLink {
+  id: string;
+  organisationId: string;
+  connectionId: string;
+  subjectType: LinkSubjectType;
+  subjectId: string;
+  externalId?: string;
+  externalUrl?: string;
+  status: LinkStatus;
+  lastPushedStatus?: string;
+  syncedComments: number;
+  lastSyncedAt?: string;
+  lastDirection?: 'OUTBOUND' | 'INBOUND';
+  lastError?: string;
+  createdAt: string;
+  updatedAt: string;
+}

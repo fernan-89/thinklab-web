@@ -238,3 +238,9 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .badge-internal { color: var(--muted); }
 .badge-public { color: var(--ok); border-color: var(--ok); }
 .article-body { white-space: pre-wrap; }
+
+/* Integrations: a failed link and a credentials variable that is not set are what staff must notice; a detached one is history. */
+.badge-linked, .badge-ok { color: var(--ok); border-color: var(--ok); }
+.badge-failed, .badge-disabled { color: var(--danger-text); border-color: var(--danger-text); }
+.badge-detached { color: var(--muted); }
+button.danger { color: var(--danger-text); border-color: var(--danger-text); }
