@@ -244,3 +244,13 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .badge-failed, .badge-disabled { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-detached { color: var(--muted); }
 button.danger { color: var(--danger-text); border-color: var(--danger-text); }
+
+/* Health: down is what must be seen, a paused or not-yet-known check is quiet; the summary tiles read at a glance. */
+.badge-up { color: var(--ok); border-color: var(--ok); }
+.badge-down { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+.badge-unknown { color: var(--muted); }
+.badge-paused { color: var(--warn); border-color: var(--warn); }
+.tiles { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1rem 0; }
+.tile { border: 1px solid var(--border-strong); padding: 0.5rem 1rem; min-width: 7rem; }
+.tile .n { display: block; font-size: 1.5rem; font-weight: 600; }
+.tile .l { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }

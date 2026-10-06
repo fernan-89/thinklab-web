@@ -7,6 +7,7 @@ import { DiscoveryPage } from './pages/Discovery';
 import { IncidentsPage } from './pages/Incidents';
 import { KnowledgePage } from './pages/Knowledge';
 import { IntegrationsPage } from './pages/Integrations';
+import { HealthPage } from './pages/Health';
 import { ProblemsPage } from './pages/Problems';
 import { ServiceRequestsPage } from './pages/ServiceRequests';
 import { LoginPage } from './pages/Login';
@@ -27,6 +28,7 @@ export function App() {
         <Route path="/assets" element={<AssetsPage />} />
         <Route path="/approvals" element={<ApprovalsPage />} />
         <Route path="/integrations" element={<IntegrationsPage />} />
+        <Route path="/health" element={<HealthPage />} />
         <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/problems" element={<ProblemsPage />} />

@@ -1,6 +1,7 @@
 import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
+  CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
@@ -20,6 +21,7 @@ const REQUESTS = '/it-service-request/v1';
 const PROBLEMS = '/it-problem-management/v1';
 const KNOWLEDGE = '/it-knowledge-base/v1';
 const CONNECTOR = '/it-external-ticketing/v1';
+const HEALTH = '/it-health-monitoring/v1';
 
 export type AssetAction = 'ready' | 'deploy' | 'maintenance' | 'decommission';
 
@@ -331,4 +333,28 @@ export const connectorApi = (api: ApiClient) => ({
   sync: (id: string) => api.put<TicketLink>(`${CONNECTOR}/${id}/sync/execute`),
   detach: (id: string) => api.put(`${CONNECTOR}/${id}/control/detach`),
   linkAuditLog: (id: string) => api.get<AuditEntry[]>(`${CONNECTOR}/${id}/audit-log/retrieve`),
+});
+
+export interface HealthCheckInput {
+  name: string;
+  target: string;
+  assetId?: string;
+  intervalSeconds?: number;
+  timeoutMillis?: number;
+  expectedStatus?: number;
+  failureThreshold?: number;
+  successThreshold?: number;
+}
+
+export const healthApi = (api: ApiClient) => ({
+  list: (filter: { health?: Health; status?: CheckStatus; assetId?: string }) =>
+    api.get<HealthCheck[]>(`${HEALTH}/retrieve`, { health: filter.health, status: filter.status, assetId: filter.assetId }),
+  summary: () => api.get<HealthSummary>(`${HEALTH}/summary/retrieve`),
+  retrieve: (id: string) => api.get<HealthCheck>(`${HEALTH}/${id}/retrieve`),
+  create: (body: HealthCheckInput & { type: CheckType }) => api.post<HealthCheck>(`${HEALTH}/initiate`, body),
+  update: (id: string, body: HealthCheckInput) => api.put(`${HEALTH}/${id}/update`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${HEALTH}/${id}/control/${action}`),
+  run: (id: string) => api.put<HealthCheck>(`${HEALTH}/${id}/check/execute`),
+  results: (id: string, limit = 20) => api.get<ProbeResult[]>(`${HEALTH}/${id}/results/retrieve`, { limit: String(limit) }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${HEALTH}/${id}/audit-log/retrieve`),
 });

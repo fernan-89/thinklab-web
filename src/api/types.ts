@@ -465,3 +465,52 @@ export interface TicketLink {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---- Health monitoring (it-health-monitoring-service, ADR-030..033) ----
+
+export type CheckType = 'HTTP' | 'TCP';
+export const CHECK_TYPES: CheckType[] = ['HTTP', 'TCP'];
+export type CheckStatus = 'ACTIVE' | 'PAUSED';
+export const CHECK_STATUSES: CheckStatus[] = ['ACTIVE', 'PAUSED'];
+export type Health = 'UNKNOWN' | 'UP' | 'DOWN';
+export const HEALTHS: Health[] = ['UNKNOWN', 'UP', 'DOWN'];
+
+export interface HealthCheck {
+  id: string;
+  organisationId: string;
+  name: string;
+  type: CheckType;
+  target: string;
+  assetId?: string;
+  intervalSeconds: number;
+  timeoutMillis: number;
+  expectedStatus?: number;
+  failureThreshold: number;
+  successThreshold: number;
+  status: CheckStatus;
+  health: Health;
+  consecutiveFailures: number;
+  lastCheckedAt?: string;
+  lastLatencyMillis?: number;
+  /** One of a fixed vocabulary (timeout, connection refused, dns failure, unexpected status, address not allowed, probe failed): never text from the target. */
+  lastError?: string;
+  lastStateChangeAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProbeResult {
+  at: string;
+  ok: boolean;
+  statusCode?: number;
+  latencyMillis: number;
+  error?: string;
+}
+
+export interface HealthSummary {
+  total: number;
+  up: number;
+  down: number;
+  unknown: number;
+  paused: number;
+}
