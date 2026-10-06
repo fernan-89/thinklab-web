@@ -2,6 +2,7 @@ import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
+  Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
@@ -357,4 +358,14 @@ export const healthApi = (api: ApiClient) => ({
   run: (id: string) => api.put<HealthCheck>(`${HEALTH}/${id}/check/execute`),
   results: (id: string, limit = 20) => api.get<ProbeResult[]>(`${HEALTH}/${id}/results/retrieve`, { limit: String(limit) }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${HEALTH}/${id}/audit-log/retrieve`),
+});
+
+const ALERTING = '/it-alerting/v1';
+
+export const alertingApi = (api: ApiClient) => ({
+  rules: () => api.get<AlertRule[]>(`${ALERTING}/rule/retrieve`),
+  createRule: (body: AlertRuleInput) => api.post<AlertRule>(`${ALERTING}/rule/initiate`, body),
+  controlRule: (id: string, action: 'pause' | 'resume') => api.put(`${ALERTING}/rule/${id}/control/${action}`),
+  alerts: (filter: { status?: AlertStatus; checkId?: string }) => api.get<Alert[]>(`${ALERTING}/retrieve`, { status: filter.status, checkId: filter.checkId }),
+  evaluate: () => api.put<Evaluation>(`${ALERTING}/evaluation/execute`),
 });

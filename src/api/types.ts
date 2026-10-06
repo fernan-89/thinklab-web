@@ -514,3 +514,55 @@ export interface HealthSummary {
   unknown: number;
   paused: number;
 }
+
+export type Severity = 'LOW' | 'MEDIUM' | 'HIGH';
+export const SEVERITIES: Severity[] = ['LOW', 'MEDIUM', 'HIGH'];
+export type RuleStatus = 'ACTIVE' | 'PAUSED';
+export type AlertStatus = 'OPEN' | 'RESOLVED';
+export const ALERT_STATUSES: AlertStatus[] = ['OPEN', 'RESOLVED'];
+
+export interface AlertRule {
+  id: string;
+  organisationId: string;
+  name: string;
+  /** Left out: the rule covers every check of the tenant. */
+  checkId?: string;
+  impact: Severity;
+  urgency: Severity;
+  requesterId: string;
+  status: RuleStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AlertRuleInput {
+  name: string;
+  checkId?: string;
+  impact: Severity;
+  urgency: Severity;
+  requesterId: string;
+}
+
+/** One outage of one check. Opened and resolved by the evaluation, never by hand. */
+export interface Alert {
+  id: string;
+  organisationId: string;
+  ruleId: string;
+  checkId: string;
+  checkName: string;
+  assetId?: string;
+  status: AlertStatus;
+  openedAt: string;
+  resolvedAt?: string;
+  incidentId?: string;
+  lastError?: string;
+  /** Why the incident is not there yet (a short fixed line); the next round retries. */
+  problem?: string;
+  updatedAt: string;
+}
+
+export interface Evaluation {
+  opened: number;
+  resolved: number;
+  incidentsOpened: number;
+}

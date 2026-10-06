@@ -254,3 +254,4 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .tile { border: 1px solid var(--border-strong); padding: 0.5rem 1rem; min-width: 7rem; }
 .tile .n { display: block; font-size: 1.5rem; font-weight: 600; }
 .tile .l { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); }
+.badge-open { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
