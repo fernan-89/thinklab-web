@@ -2,6 +2,7 @@ import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
+  BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
   Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
@@ -371,4 +372,16 @@ export const alertingApi = (api: ApiClient) => ({
   windows: () => api.get<MaintenanceWindow[]>(`${ALERTING}/window/retrieve`),
   createWindow: (body: MaintenanceWindowInput) => api.post<MaintenanceWindow>(`${ALERTING}/window/initiate`, body),
   cancelWindow: (id: string) => api.put(`${ALERTING}/window/${id}/control/cancel`),
+});
+
+const BACKUP = '/it-backup-registry/v1';
+
+export const backupApi = (api: ApiClient) => ({
+  list: (filter: { status?: PolicyStatus; protection?: Protection }) => api.get<BackupPolicy[]>(`${BACKUP}/retrieve`, { status: filter.status, protection: filter.protection }),
+  retrieve: (id: string) => api.get<BackupPolicy>(`${BACKUP}/${id}/retrieve`),
+  create: (body: BackupPolicyInput) => api.post<BackupPolicy>(`${BACKUP}/initiate`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${BACKUP}/${id}/control/${action}`),
+  runs: (filter: { policyId?: string; kind?: RunKind; outcome?: RunOutcome }, limit = 20) =>
+    api.get<BackupRun[]>(`${BACKUP}/run/retrieve`, { policyId: filter.policyId, kind: filter.kind, outcome: filter.outcome, limit: String(limit) }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${BACKUP}/${id}/audit-log/retrieve`),
 });

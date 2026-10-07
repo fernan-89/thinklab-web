@@ -616,3 +616,66 @@ export interface MaintenanceWindowInput {
   startsAt: string;
   endsAt: string;
 }
+
+// ---- Backup registry (it-backup-registry-service, ADR-030..033) ----
+
+export type PolicyStatus = 'ACTIVE' | 'PAUSED';
+export const POLICY_STATUSES: PolicyStatus[] = ['ACTIVE', 'PAUSED'];
+export type Protection = 'PAUSED' | 'NEVER' | 'OK' | 'RPO_BREACHED';
+export const PROTECTIONS: Protection[] = ['OK', 'NEVER', 'RPO_BREACHED', 'PAUSED'];
+export type RestoreTest = 'NOT_REQUIRED' | 'OK' | 'OVERDUE';
+export type RunKind = 'BACKUP' | 'RESTORE_TEST';
+export const RUN_KINDS: RunKind[] = ['BACKUP', 'RESTORE_TEST'];
+export type RunOutcome = 'SUCCEEDED' | 'FAILED';
+export const RUN_OUTCOMES: RunOutcome[] = ['SUCCEEDED', 'FAILED'];
+
+/** A promise about one asset, judged when read: `protection`, `restoreTest` and `rtoMet` are never stored. */
+export interface BackupPolicy {
+  id: string;
+  organisationId: string;
+  name: string;
+  assetId: string;
+  frequencyHours: number;
+  rpoHours: number;
+  rtoMinutes: number;
+  retentionDays: number;
+  restoreTestEveryDays?: number;
+  status: PolicyStatus;
+  protection: Protection;
+  protectedUntil?: string;
+  restoreTest: RestoreTest;
+  restoreTestDueAt?: string;
+  /** Unknown (left out) until a restore was tested. */
+  rtoMet?: boolean;
+  lastRunAt?: string;
+  lastSuccessAt?: string;
+  lastRestoreTestAt?: string;
+  lastRestoreMinutes?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BackupPolicyInput {
+  name: string;
+  assetId: string;
+  frequencyHours: number;
+  rpoHours: number;
+  rtoMinutes: number;
+  retentionDays: number;
+  restoreTestEveryDays?: number;
+}
+
+export interface BackupRun {
+  id: string;
+  policyId: string;
+  kind: RunKind;
+  outcome: RunOutcome;
+  startedAt: string;
+  finishedAt: string;
+  durationMinutes: number;
+  sizeBytes?: number;
+  /** One of a fixed vocabulary (TIMEOUT, STORAGE_FULL, SOURCE_UNREACHABLE, AUTH_FAILED, CHECKSUM_MISMATCH, OTHER): never the tool's own words. */
+  failureReason?: string;
+  reportedBy: string;
+  reportedAt: string;
+}
