@@ -2,7 +2,7 @@ import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
-  Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation,
+  Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
@@ -368,4 +368,7 @@ export const alertingApi = (api: ApiClient) => ({
   controlRule: (id: string, action: 'pause' | 'resume') => api.put(`${ALERTING}/rule/${id}/control/${action}`),
   alerts: (filter: { status?: AlertStatus; checkId?: string }) => api.get<Alert[]>(`${ALERTING}/retrieve`, { status: filter.status, checkId: filter.checkId }),
   evaluate: () => api.put<Evaluation>(`${ALERTING}/evaluation/execute`),
+  windows: () => api.get<MaintenanceWindow[]>(`${ALERTING}/window/retrieve`),
+  createWindow: (body: MaintenanceWindowInput) => api.post<MaintenanceWindow>(`${ALERTING}/window/initiate`, body),
+  cancelWindow: (id: string) => api.put(`${ALERTING}/window/${id}/control/cancel`),
 });

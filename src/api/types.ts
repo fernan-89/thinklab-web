@@ -531,6 +531,13 @@ export interface AlertRule {
   urgency: Severity;
   requesterId: string;
   status: RuleStatus;
+  /** The NAME of an environment variable that holds a webhook address (never the address itself). */
+  notifyTarget?: string;
+  escalateTarget?: string;
+  /** Minutes an incident may stay unacknowledged before the escalation target is told. */
+  escalateAfterMinutes?: number;
+  /** Minutes after a resolution in which the check going down again reopens that alert (0 = never). */
+  reopenWithinMinutes: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -541,6 +548,20 @@ export interface AlertRuleInput {
   impact: Severity;
   urgency: Severity;
   requesterId: string;
+  notifyTarget?: string;
+  escalateTarget?: string;
+  escalateAfterMinutes?: number;
+  reopenWithinMinutes?: number;
+}
+
+/** What came of one notice to a webhook ({@code OPENED_0}, {@code REOPENED_1}, {@code ESCALATED_0}...: the event and the cycle of the outage). */
+export interface AlertNotice {
+  notice: string;
+  attempts: number;
+  lastAttemptAt?: string;
+  sentAt?: string;
+  /** A fixed reason, never what the webhook answered. */
+  lastError?: string;
 }
 
 /** One outage of one check. Opened and resolved by the evaluation, never by hand. */
@@ -559,10 +580,39 @@ export interface Alert {
   /** Why the incident is not there yet (a short fixed line); the next round retries. */
   problem?: string;
   updatedAt: string;
+  /** How many times the same check going down again reopened this alert. */
+  reopenCount: number;
+  reopenedAt?: string;
+  notices: AlertNotice[];
 }
 
 export interface Evaluation {
   opened: number;
   resolved: number;
   incidentsOpened: number;
+  reopened: number;
+  notified: number;
+}
+
+export type WindowStatus = 'ACTIVE' | 'CANCELLED';
+
+/** A planned silence: no alert is opened or reopened and no notice is sent for the check (or every check) meanwhile. */
+export interface MaintenanceWindow {
+  id: string;
+  organisationId: string;
+  name: string;
+  /** Left out: the window covers every check of the tenant. */
+  checkId?: string;
+  startsAt: string;
+  endsAt: string;
+  status: WindowStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MaintenanceWindowInput {
+  name: string;
+  checkId?: string;
+  startsAt: string;
+  endsAt: string;
 }
