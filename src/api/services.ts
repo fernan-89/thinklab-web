@@ -2,6 +2,7 @@ import type { ApiClient } from './client';
 import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
+  PatchCompliance, PatchFinding, PatchPolicy, PatchPolicyInput, FindingStatus, WaiverReason,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
   Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
@@ -384,4 +385,18 @@ export const backupApi = (api: ApiClient) => ({
   runs: (filter: { policyId?: string; kind?: RunKind; outcome?: RunOutcome }, limit = 20) =>
     api.get<BackupRun[]>(`${BACKUP}/run/retrieve`, { policyId: filter.policyId, kind: filter.kind, outcome: filter.outcome, limit: String(limit) }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${BACKUP}/${id}/audit-log/retrieve`),
+});
+
+const PATCH = '/it-patch-registry/v1';
+
+export const patchApi = (api: ApiClient) => ({
+  list: (filter: { status?: PolicyStatus; compliance?: PatchCompliance }) => api.get<PatchPolicy[]>(`${PATCH}/retrieve`, { status: filter.status, compliance: filter.compliance }),
+  retrieve: (id: string) => api.get<PatchPolicy>(`${PATCH}/${id}/retrieve`),
+  create: (body: PatchPolicyInput) => api.post<PatchPolicy>(`${PATCH}/initiate`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${PATCH}/${id}/control/${action}`),
+  findings: (filter: { policyId?: string; status?: FindingStatus }, limit = 50) =>
+    api.get<PatchFinding[]>(`${PATCH}/finding/retrieve`, { policyId: filter.policyId, status: filter.status, limit: String(limit) }),
+  waive: (id: string, reason: WaiverReason, until: string) => api.put(`${PATCH}/finding/${id}/control/waive`, { reason, until }),
+  unwaive: (id: string) => api.put(`${PATCH}/finding/${id}/control/unwaive`),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${PATCH}/${id}/audit-log/retrieve`),
 });
