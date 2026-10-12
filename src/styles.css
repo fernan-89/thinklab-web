@@ -259,3 +259,11 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 /* Backup registry: protection of a policy, judged when read */
 .badge-never, .badge-not_required { color: var(--muted); }
 .badge-rpo_breached, .badge-overdue { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+
+/* Patch registry: compliance of a policy and status of a finding, judged when read */
+.badge-compliant, .badge-applied { color: var(--ok); border-color: var(--ok); }
+.badge-waived { color: var(--warn); border-color: var(--warn); }
+.badge-critical { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+.badge-high { color: var(--danger-text); border-color: var(--danger-text); }
+.badge-medium { color: var(--warn); border-color: var(--warn); }
+.badge-low { color: var(--muted); }

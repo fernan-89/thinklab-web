@@ -679,3 +679,60 @@ export interface BackupRun {
   reportedBy: string;
   reportedAt: string;
 }
+
+// ---- Patch registry (it-patch-registry-service, ADR-030..033) ----
+
+export type PatchSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export const PATCH_SEVERITIES: PatchSeverity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+export type PatchCompliance = 'COMPLIANT' | 'OVERDUE' | 'PAUSED';
+export const PATCH_COMPLIANCES: PatchCompliance[] = ['COMPLIANT', 'OVERDUE', 'PAUSED'];
+export type FindingStatus = 'PENDING' | 'APPLIED' | 'WAIVED';
+export const FINDING_STATUSES: FindingStatus[] = ['PENDING', 'WAIVED', 'APPLIED'];
+export type WaiverReason = 'NOT_APPLICABLE' | 'COMPENSATING_CONTROL' | 'ACCEPTED_RISK' | 'VENDOR_NO_FIX';
+export const WAIVER_REASONS: WaiverReason[] = ['NOT_APPLICABLE', 'COMPENSATING_CONTROL', 'ACCEPTED_RISK', 'VENDOR_NO_FIX'];
+
+/** The promise about one asset, judged when read: `compliance` and the counts are never stored. */
+export interface PatchPolicy {
+  id: string;
+  organisationId: string;
+  name: string;
+  assetId: string;
+  criticalDays: number;
+  highDays: number;
+  mediumDays: number;
+  lowDays: number;
+  status: PolicyStatus;
+  compliance: PatchCompliance;
+  openFindings: number;
+  overdueFindings: number;
+  waivedFindings: number;
+  oldestOverdueDueAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PatchPolicyInput {
+  name: string;
+  assetId: string;
+  criticalDays: number;
+  highDays: number;
+  mediumDays: number;
+  lowDays: number;
+}
+
+/** A patch available for the asset a policy covers; the deadline and `overdue` are judged when read. */
+export interface PatchFinding {
+  id: string;
+  policyId: string;
+  patchRef: string;
+  severity: PatchSeverity;
+  announcedAt: string;
+  status: FindingStatus;
+  dueAt?: string;
+  overdue: boolean;
+  appliedAt?: string;
+  waiverReason?: WaiverReason;
+  waivedUntil?: string;
+  reportedBy: string;
+  reportedAt: string;
+}
