@@ -274,3 +274,9 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-stable { color: var(--ok); border-color: var(--ok); }
 .stale-note { color: var(--warn); font-size: 0.8rem; }
 
+
+/* Vendor registry: where an agreement stands, judged when read */
+.badge-in_force { color: var(--ok); border-color: var(--ok); }
+.badge-expiring { color: var(--warn); border-color: var(--warn); font-weight: 700; }
+.badge-expired { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+.badge-not_started, .badge-inactive { color: var(--muted); }

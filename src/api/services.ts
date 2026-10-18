@@ -3,6 +3,7 @@ import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
   PatchCompliance, PatchFinding, PatchPolicy, PatchPolicyInput, FindingStatus, WaiverReason,
+  Agreement, AgreementInput, AgreementKind, AgreementStanding, AgreementStatus, AgreementUpdate, Vendor, VendorCategory, VendorInput, VendorStatus,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
   Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
@@ -412,4 +413,20 @@ export const capacityApi = (api: ApiClient) => ({
   control: (id: string, action: 'pause' | 'resume') => api.put(`${CAPACITY}/${id}/control/${action}`),
   samples: (filter: { policyId?: string }, limit = 20) => api.get<CapacitySample[]>(`${CAPACITY}/sample/retrieve`, { policyId: filter.policyId, limit: String(limit) }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${CAPACITY}/${id}/audit-log/retrieve`),
+});
+
+const VENDOR = '/it-vendor-registry/v1';
+
+export const vendorApi = (api: ApiClient) => ({
+  vendors: (filter: { status?: VendorStatus; category?: VendorCategory }) => api.get<Vendor[]>(`${VENDOR}/retrieve`, { status: filter.status, category: filter.category }),
+  createVendor: (body: VendorInput) => api.post<Vendor>(`${VENDOR}/initiate`, body),
+  controlVendor: (id: string, action: 'deactivate' | 'activate') => api.put(`${VENDOR}/${id}/control/${action}`),
+  vendorAuditLog: (id: string) => api.get<AuditEntry[]>(`${VENDOR}/${id}/audit-log/retrieve`),
+  agreements: (filter: { vendorId?: string; kind?: AgreementKind; standing?: AgreementStanding; status?: AgreementStatus }) =>
+    api.get<Agreement[]>(`${VENDOR}/agreement/retrieve`, { vendorId: filter.vendorId, kind: filter.kind, standing: filter.standing, status: filter.status }),
+  agreement: (id: string) => api.get<Agreement>(`${VENDOR}/agreement/${id}/retrieve`),
+  createAgreement: (body: AgreementInput) => api.post<Agreement>(`${VENDOR}/agreement/initiate`, body),
+  updateAgreement: (id: string, body: AgreementUpdate) => api.put(`${VENDOR}/agreement/${id}/update`, body),
+  controlAgreement: (id: string, action: 'pause' | 'resume') => api.put(`${VENDOR}/agreement/${id}/control/${action}`),
+  agreementAuditLog: (id: string) => api.get<AuditEntry[]>(`${VENDOR}/agreement/${id}/audit-log/retrieve`),
 });

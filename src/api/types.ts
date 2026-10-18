@@ -807,3 +807,74 @@ export interface CapacitySample {
   reportedAt: string;
 }
 
+
+// ---- Vendor registry (it-vendor-registry-service, ADR-030..033) ----
+
+export type VendorCategory = 'HARDWARE' | 'SOFTWARE' | 'CLOUD' | 'SERVICES' | 'OTHER';
+export const VENDOR_CATEGORIES: VendorCategory[] = ['HARDWARE', 'SOFTWARE', 'CLOUD', 'SERVICES', 'OTHER'];
+export type VendorStatus = 'ACTIVE' | 'INACTIVE';
+export const VENDOR_STATUSES: VendorStatus[] = ['ACTIVE', 'INACTIVE'];
+
+/** A company the organisation buys from: a name and a category, nothing about a person and nothing about money. */
+export interface Vendor {
+  id: string;
+  organisationId: string;
+  name: string;
+  category: VendorCategory;
+  status: VendorStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorInput {
+  name: string;
+  category: VendorCategory;
+}
+
+export type AgreementKind = 'CONTRACT' | 'WARRANTY' | 'SUPPORT' | 'LICENSE';
+export const AGREEMENT_KINDS: AgreementKind[] = ['CONTRACT', 'WARRANTY', 'SUPPORT', 'LICENSE'];
+/** Judged when read, never stored: the day it is read decides. */
+export type AgreementStanding = 'PAUSED' | 'NOT_STARTED' | 'IN_FORCE' | 'EXPIRING' | 'EXPIRED';
+export const AGREEMENT_STANDINGS: AgreementStanding[] = ['EXPIRING', 'EXPIRED', 'IN_FORCE', 'NOT_STARTED', 'PAUSED'];
+export type AgreementStatus = 'ACTIVE' | 'PAUSED';
+
+/** What a vendor owes: a contract, a warranty, a support plan or a licence term. The days are calendar days (YYYY-MM-DD). */
+export interface Agreement {
+  id: string;
+  organisationId: string;
+  vendorId: string;
+  kind: AgreementKind;
+  reference: string;
+  assetId?: string;
+  startsOn: string;
+  endsOn: string;
+  noticeDays: number;
+  autoRenew: boolean;
+  status: AgreementStatus;
+  standing: AgreementStanding;
+  /** Days from the day it was read to the last day; negative once it ended; left out when paused. */
+  daysToEnd?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgreementInput {
+  vendorId: string;
+  kind: AgreementKind;
+  reference: string;
+  assetId?: string;
+  startsOn: string;
+  endsOn: string;
+  noticeDays: number;
+  autoRenew: boolean;
+}
+
+/** The whole definition again, minus the vendor and the reference, which identify the agreement. */
+export interface AgreementUpdate {
+  kind: AgreementKind;
+  assetId?: string;
+  startsOn: string;
+  endsOn: string;
+  noticeDays: number;
+  autoRenew: boolean;
+}
