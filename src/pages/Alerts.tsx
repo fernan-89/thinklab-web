@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
-import { alertingApi, healthApi } from '../api/services';
-import { ALERT_STATUSES, SEVERITIES, type Alert, type AlertNotice, type AlertRule, type AlertStatus, type Evaluation, type MaintenanceWindow, type Severity } from '../api/types';
+import { alertingApi, backupApi, capacityApi, healthApi, patchApi } from '../api/services';
+import { ALERT_STATUSES, RULE_SOURCES, SEVERITIES, type Alert, type AlertNotice, type AlertRule, type AlertStatus, type Evaluation, type MaintenanceWindow, type RuleSource, type Severity } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
@@ -52,6 +52,10 @@ export function AlertsPage() {
 
   const ruleName = (id: string) => rules.data?.find((rule) => rule.id === id)?.name ?? id;
   const checkLabel = (id?: string) => (id ? <code>{id}</code> : 'every check');
+  const noun = (source?: RuleSource) => RULE_SOURCES.find((s) => s.value === source)?.noun ?? 'check';
+  const coversLabel = (rule: AlertRule) => (rule.checkId
+    ? <><code>{rule.checkId}</code>{rule.source && rule.source !== 'HEALTH_CHECK' ? <span className="muted"> ({noun(rule.source)})</span> : null}</>
+    : `every ${noun(rule.source)}`);
 
   return (
     <section>
@@ -63,7 +67,7 @@ export function AlertsPage() {
           <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New rule</button>
         </div>
       </div>
-      <p className="muted">When a check goes down the platform opens one incident for that outage, and adds an internal note when it is back. A check that goes down again soon after is reopened on the same incident, and the people a rule names are told through a webhook. The incident is never closed for you.</p>
+      <p className="muted">When a check goes down, or a backup, patch or capacity promise is broken, the platform opens one incident for it, and adds an internal note when it is back. A check that goes down again soon after is reopened on the same incident, and the people a rule names are told through a webhook. The incident is never closed for you.</p>
       {evaluation && <p role="status">Looked now: {evaluation.opened} alert(s) opened, {evaluation.resolved} resolved, {evaluation.incidentsOpened} incident(s) filed, {evaluation.reopened} reopened, {evaluation.notified} notice(s) sent.</p>}
       <ProblemBanner error={actionError} />
       {creating && <NewRuleForm onCancel={() => setCreating(false)} onCreated={() => { setCreating(false); rules.reload(); }} />}
@@ -79,7 +83,7 @@ export function AlertsPage() {
             {rules.data?.map((rule: AlertRule) => (
               <tr key={rule.id}>
                 <td>{rule.name}</td>
-                <td>{checkLabel(rule.checkId)}</td>
+                <td>{coversLabel(rule)}</td>
                 <td>{rule.impact}</td>
                 <td>{rule.urgency}</td>
                 <td>{rule.notifyTarget ? <code>{rule.notifyTarget}</code> : <span className="muted">-</span>}</td>
@@ -154,7 +158,13 @@ export function AlertsPage() {
 
 function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
   const { api } = useSession();
-  const checks = useAsync(() => healthApi(api).list({}), []);
+  const [source, setSource] = useState<RuleSource>('HEALTH_CHECK');
+  const checks = useAsync<{ id: string; name: string }[]>(() => {
+    if (source === 'BACKUP') return backupApi(api).list({});
+    if (source === 'PATCH') return patchApi(api).list({});
+    if (source === 'CAPACITY') return capacityApi(api).list({});
+    return healthApi(api).list({});
+  }, [source]);
   const [name, setName] = useState('');
   const [checkId, setCheckId] = useState('');
   const [impact, setImpact] = useState<Severity>('MEDIUM');
@@ -175,7 +185,7 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
     setError(undefined);
     try {
       await alertingApi(api).createRule({
-        name: name.trim(), checkId: checkId || undefined, impact, urgency, requesterId: requesterId.trim(),
+        name: name.trim(), source: source === 'HEALTH_CHECK' ? undefined : source, checkId: checkId || undefined, impact, urgency, requesterId: requesterId.trim(),
         notifyTarget: notifyTarget.trim() || undefined,
         escalateTarget: escalateTarget.trim() || undefined,
         escalateAfterMinutes: escalateTarget.trim() ? Number(escalateAfter) : undefined,
@@ -193,9 +203,14 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
     <form className="card form" aria-label="New rule" onSubmit={submit}>
       <h2>New rule</h2>
       <label>Name<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
+      <label>Watches
+        <select value={source} onChange={(e) => { setSource(e.target.value as RuleSource); setCheckId(''); }}>
+          {RULE_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+      </label>
       <label>Covers
         <select value={checkId} onChange={(e) => setCheckId(e.target.value)}>
-          <option value="">Every check</option>
+          <option value="">Every {RULE_SOURCES.find((s) => s.value === source)?.noun}</option>
           {checks.data?.map((check) => <option key={check.id} value={check.id}>{check.name}</option>)}
         </select>
       </label>

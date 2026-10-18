@@ -235,6 +235,56 @@ describe('reopening, notices and escalation', () => {
   });
 });
 
+describe('rules that watch the registries', () => {
+  it('says what a rule watches: every policy of a registry, or one policy and its kind', async () => {
+    const { impl } = fakeFetch(server([
+      rule({ source: 'BACKUP', name: 'Backups' }),
+      rule({ id: 'r3', name: 'Disk', source: 'CAPACITY', checkId: 'p1' }),
+      rule({ id: 'r4', name: 'Intranet only', source: 'HEALTH_CHECK', checkId: 'k1' }),
+    ], []));
+    renderWithSession(<AlertsPage />, impl, me);
+
+    const rules = within(await screen.findByRole('table', { name: 'Rules' }));
+    expect(rules.getByText('every backup policy')).toBeInTheDocument();
+    expect(rules.getByText('p1')).toBeInTheDocument();
+    expect(rules.getByText('(capacity policy)')).toBeInTheDocument();
+    expect(rules.getByText('k1')).toBeInTheDocument();
+    expect(rules.queryByText('(check)')).not.toBeInTheDocument();
+  });
+
+  it('a rule for a registry lists the policies of that registry and sends its source; changing the source forgets the chosen policy', async () => {
+    const policies = (name: string) => ({ body: [{ id: `${name}-1`, name: `${name} policy` }] });
+    const { impl, calls } = fakeFetch(server([rule()], [], (r) => {
+      if (r.url.pathname.includes('/it-backup-registry/')) return policies('backup');
+      if (r.url.pathname.includes('/it-patch-registry/')) return policies('patch');
+      if (r.url.pathname.includes('/it-capacity-registry/')) return policies('capacity');
+      return undefined;
+    }));
+    renderWithSession(<AlertsPage />, impl, me);
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Rules' });
+    await user.click(screen.getByRole('button', { name: 'New rule' }));
+    const form = screen.getByRole('form', { name: 'New rule' });
+
+    await user.selectOptions(within(form).getByLabelText('Watches'), 'PATCH');
+    await within(form).findByRole('option', { name: 'patch policy' });
+    expect(within(form).getByRole('option', { name: 'Every patch policy' })).toBeInTheDocument();
+    await user.selectOptions(within(form).getByLabelText('Covers'), 'patch-1');
+    await user.selectOptions(within(form).getByLabelText('Watches'), 'BACKUP');
+    await within(form).findByRole('option', { name: 'backup policy' });
+    expect(within(form).getByLabelText('Covers')).toHaveValue('');
+    await user.selectOptions(within(form).getByLabelText('Watches'), 'CAPACITY');
+    await within(form).findByRole('option', { name: 'capacity policy' });
+    await user.selectOptions(within(form).getByLabelText('Covers'), 'capacity-1');
+    await user.type(within(form).getByLabelText('Name'), 'Disk');
+    await user.type(within(form).getByLabelText(/Requester/), 'u1');
+    await user.click(within(form).getByRole('button', { name: 'Create rule' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')!.body).toMatchObject({ name: 'Disk', source: 'CAPACITY', checkId: 'capacity-1' });
+  });
+});
+
 describe('maintenance windows', () => {
   it('lists the windows with what they cover and cancels an ACTIVE one', async () => {
     const { impl, calls } = fakeFetch(server([rule()], [alert()], () => undefined, [window(), window({ id: 'w3', name: 'Old', checkId: 'k1', status: 'CANCELLED' })]));
