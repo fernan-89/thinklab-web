@@ -879,3 +879,54 @@ export interface AgreementUpdate {
   noticeDays: number;
   autoRenew: boolean;
 }
+
+// ---- Licence registry (it-license-registry-service, ADR-030..033) ----
+
+export type LicenseUnit = 'USER' | 'DEVICE' | 'INSTALL' | 'CORE' | 'OTHER';
+export const LICENSE_UNITS: LicenseUnit[] = ['USER', 'DEVICE', 'INSTALL', 'CORE', 'OTHER'];
+/** Judged when read, never stored. */
+export type LicenseLevel = 'PAUSED' | 'NO_DATA' | 'OK' | 'NEAR_LIMIT' | 'OVER_LIMIT';
+export const LICENSE_LEVELS: LicenseLevel[] = ['OVER_LIMIT', 'NEAR_LIMIT', 'OK', 'NO_DATA', 'PAUSED'];
+
+/** Seats of a product bought by the organisation, with the latest count of seats in use an inventory tool reported. */
+export interface License {
+  id: string;
+  organisationId: string;
+  product: string;
+  unit: LicenseUnit;
+  entitled: number;
+  warnPercent: number;
+  reportEveryHours: number;
+  vendorId?: string;
+  agreementId?: string;
+  status: PolicyStatus;
+  level: LicenseLevel;
+  usagePercent?: number;
+  /** Seats bought minus seats in use: negative when over. */
+  available?: number;
+  stale: boolean;
+  lastInUse?: number;
+  lastMeasuredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LicenseInput {
+  product: string;
+  unit: LicenseUnit;
+  entitled: number;
+  warnPercent: number;
+  reportEveryHours: number;
+  vendorId?: string;
+  agreementId?: string;
+}
+
+/** A count of seats in use at a moment, never a list of people. */
+export interface UsageReport {
+  id: string;
+  licenseId: string;
+  inUse: number;
+  measuredAt: string;
+  reportedBy: string;
+  reportedAt: string;
+}

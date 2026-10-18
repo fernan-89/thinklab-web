@@ -23,6 +23,7 @@ export function Layout() {
           <NavLink to="/patches">Patches</NavLink>
           <NavLink to="/capacity">Capacity</NavLink>
           <NavLink to="/vendors">Vendors</NavLink>
+          <NavLink to="/licenses">Licenses</NavLink>
           <NavLink to="/approvals">Approvals</NavLink>
           <NavLink to="/stock">Stock</NavLink>
           <NavLink to="/topology">Topology</NavLink>

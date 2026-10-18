@@ -13,6 +13,7 @@ import { BackupsPage } from './pages/Backups';
 import { PatchesPage } from './pages/Patches';
 import { CapacityPage } from './pages/Capacity';
 import { VendorsPage } from './pages/Vendors';
+import { LicensesPage } from './pages/Licenses';
 import { ProblemsPage } from './pages/Problems';
 import { ServiceRequestsPage } from './pages/ServiceRequests';
 import { LoginPage } from './pages/Login';
@@ -39,6 +40,7 @@ export function App() {
         <Route path="/patches" element={<PatchesPage />} />
         <Route path="/capacity" element={<CapacityPage />} />
         <Route path="/vendors" element={<VendorsPage />} />
+        <Route path="/licenses" element={<LicensesPage />} />
         <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/problems" element={<ProblemsPage />} />

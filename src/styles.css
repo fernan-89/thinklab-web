@@ -280,3 +280,7 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-expiring { color: var(--warn); border-color: var(--warn); font-weight: 700; }
 .badge-expired { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
 .badge-not_started, .badge-inactive { color: var(--muted); }
+
+/* Licence registry: seats in use against seats bought, judged when read */
+.badge-near_limit { color: var(--warn); border-color: var(--warn); }
+.badge-over_limit { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }

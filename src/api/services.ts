@@ -4,6 +4,7 @@ import type {
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
   PatchCompliance, PatchFinding, PatchPolicy, PatchPolicyInput, FindingStatus, WaiverReason,
   Agreement, AgreementInput, AgreementKind, AgreementStanding, AgreementStatus, AgreementUpdate, Vendor, VendorCategory, VendorInput, VendorStatus,
+  License, LicenseInput, LicenseLevel, LicenseUnit, UsageReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
   Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
@@ -429,4 +430,16 @@ export const vendorApi = (api: ApiClient) => ({
   updateAgreement: (id: string, body: AgreementUpdate) => api.put(`${VENDOR}/agreement/${id}/update`, body),
   controlAgreement: (id: string, action: 'pause' | 'resume') => api.put(`${VENDOR}/agreement/${id}/control/${action}`),
   agreementAuditLog: (id: string) => api.get<AuditEntry[]>(`${VENDOR}/agreement/${id}/audit-log/retrieve`),
+});
+
+const LICENSE = '/it-license-registry/v1';
+
+export const licenseApi = (api: ApiClient) => ({
+  list: (filter: { status?: PolicyStatus; unit?: LicenseUnit; level?: LicenseLevel; vendorId?: string }) =>
+    api.get<License[]>(`${LICENSE}/retrieve`, { status: filter.status, unit: filter.unit, level: filter.level, vendorId: filter.vendorId }),
+  retrieve: (id: string) => api.get<License>(`${LICENSE}/${id}/retrieve`),
+  create: (body: LicenseInput) => api.post<License>(`${LICENSE}/initiate`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${LICENSE}/${id}/control/${action}`),
+  reports: (filter: { licenseId?: string }, limit = 20) => api.get<UsageReport[]>(`${LICENSE}/usage/retrieve`, { licenseId: filter.licenseId, limit: String(limit) }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${LICENSE}/${id}/audit-log/retrieve`),
 });
