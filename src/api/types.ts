@@ -521,11 +521,22 @@ export type RuleStatus = 'ACTIVE' | 'PAUSED';
 export type AlertStatus = 'OPEN' | 'RESOLVED';
 export const ALERT_STATUSES: AlertStatus[] = ['OPEN', 'RESOLVED'];
 
+/** What a rule watches: the health checks, or the promises the registries judge (a broken backup, patch or capacity policy). */
+export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY';
+export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] = [
+  { value: 'HEALTH_CHECK', label: 'Health checks', noun: 'check' },
+  { value: 'BACKUP', label: 'Backup policies', noun: 'backup policy' },
+  { value: 'PATCH', label: 'Patch policies', noun: 'patch policy' },
+  { value: 'CAPACITY', label: 'Capacity policies', noun: 'capacity policy' },
+];
+
 export interface AlertRule {
   id: string;
   organisationId: string;
   name: string;
-  /** Left out: the rule covers every check of the tenant. */
+  /** Left out (older rules): the health checks. */
+  source?: RuleSource;
+  /** Left out: the rule covers every check (or policy of its source) of the tenant. */
   checkId?: string;
   impact: Severity;
   urgency: Severity;
@@ -544,6 +555,8 @@ export interface AlertRule {
 
 export interface AlertRuleInput {
   name: string;
+  /** Left out: the health checks. */
+  source?: RuleSource;
   checkId?: string;
   impact: Severity;
   urgency: Severity;
