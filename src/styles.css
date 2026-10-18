@@ -267,3 +267,10 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-high { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-medium { color: var(--warn); border-color: var(--warn); }
 .badge-low { color: var(--muted); }
+
+/* Capacity registry: level of a policy and where the trend leads, judged when read */
+.badge-warning, .badge-within_horizon { color: var(--warn); border-color: var(--warn); }
+.badge-no_data, .badge-not_enough_data, .badge-beyond_horizon { color: var(--muted); }
+.badge-stable { color: var(--ok); border-color: var(--ok); }
+.stale-note { color: var(--warn); font-size: 0.8rem; }
+

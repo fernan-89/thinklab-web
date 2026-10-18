@@ -3,6 +3,7 @@ import type {
   Asset, AssetCategory, AssetStatus, AuditEntry, BlastRadius, ChainIntegrity, DiscoveredItem, DiscoveredItemStatus, Entitlement, LedgerEntry,
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
   PatchCompliance, PatchFinding, PatchPolicy, PatchPolicyInput, FindingStatus, WaiverReason,
+  CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
   Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
@@ -399,4 +400,16 @@ export const patchApi = (api: ApiClient) => ({
   waive: (id: string, reason: WaiverReason, until: string) => api.put(`${PATCH}/finding/${id}/control/waive`, { reason, until }),
   unwaive: (id: string) => api.put(`${PATCH}/finding/${id}/control/unwaive`),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${PATCH}/${id}/audit-log/retrieve`),
+});
+
+const CAPACITY = '/it-capacity-registry/v1';
+
+export const capacityApi = (api: ApiClient) => ({
+  list: (filter: { status?: PolicyStatus; level?: CapacityLevel; forecast?: CapacityForecast; metric?: CapacityMetric }) =>
+    api.get<CapacityPolicy[]>(`${CAPACITY}/retrieve`, { status: filter.status, level: filter.level, forecast: filter.forecast, metric: filter.metric }),
+  retrieve: (id: string) => api.get<CapacityPolicy>(`${CAPACITY}/${id}/retrieve`),
+  create: (body: CapacityPolicyInput) => api.post<CapacityPolicy>(`${CAPACITY}/initiate`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${CAPACITY}/${id}/control/${action}`),
+  samples: (filter: { policyId?: string }, limit = 20) => api.get<CapacitySample[]>(`${CAPACITY}/sample/retrieve`, { policyId: filter.policyId, limit: String(limit) }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${CAPACITY}/${id}/audit-log/retrieve`),
 });
