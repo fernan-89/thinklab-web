@@ -736,3 +736,61 @@ export interface PatchFinding {
   reportedBy: string;
   reportedAt: string;
 }
+
+// ---- Capacity registry (it-capacity-registry-service, ADR-030..033) ----
+
+export type CapacityMetric = 'DISK' | 'MEMORY' | 'CPU' | 'NETWORK' | 'LICENSES' | 'OTHER';
+export const CAPACITY_METRICS: CapacityMetric[] = ['DISK', 'MEMORY', 'CPU', 'NETWORK', 'LICENSES', 'OTHER'];
+export type CapacityLevel = 'PAUSED' | 'NO_DATA' | 'OK' | 'WARNING' | 'CRITICAL';
+export const CAPACITY_LEVELS: CapacityLevel[] = ['CRITICAL', 'WARNING', 'OK', 'NO_DATA', 'PAUSED'];
+export type CapacityForecast = 'NOT_ENOUGH_DATA' | 'STABLE' | 'WITHIN_HORIZON' | 'BEYOND_HORIZON';
+export const CAPACITY_FORECASTS: CapacityForecast[] = ['WITHIN_HORIZON', 'BEYOND_HORIZON', 'STABLE', 'NOT_ENOUGH_DATA'];
+
+/** The watch on one metric of one asset. `level`, `utilisationPercent`, `stale` and the forecast are judged when read, never stored; a paused policy has no forecast. */
+export interface CapacityPolicy {
+  id: string;
+  organisationId: string;
+  name: string;
+  assetId: string;
+  metric: CapacityMetric;
+  limit: number;
+  warnPercent: number;
+  criticalPercent: number;
+  windowDays: number;
+  horizonDays: number;
+  reportEveryHours: number;
+  status: PolicyStatus;
+  level: CapacityLevel;
+  utilisationPercent?: number;
+  stale: boolean;
+  forecast?: CapacityForecast;
+  daysToLimit?: number;
+  projectedExhaustionAt?: string;
+  lastValue?: number;
+  lastMeasuredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CapacityPolicyInput {
+  name: string;
+  assetId: string;
+  metric: CapacityMetric;
+  limit: number;
+  warnPercent: number;
+  criticalPercent: number;
+  windowDays: number;
+  horizonDays: number;
+  reportEveryHours: number;
+}
+
+/** A measurement a tool reported: a value and a moment, nothing else. */
+export interface CapacitySample {
+  id: string;
+  policyId: string;
+  value: number;
+  measuredAt: string;
+  reportedBy: string;
+  reportedAt: string;
+}
+
