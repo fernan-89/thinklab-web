@@ -283,6 +283,8 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 
 /* Licence registry: seats in use against seats bought, judged when read */
 .badge-near_limit { color: var(--warn); border-color: var(--warn); }
+.badge-missing { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+.badge-present { color: var(--ok); border-color: var(--ok); }
 .badge-over_limit { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
 
 /* Cloud costs: the month spent and where it is heading, judged when read */

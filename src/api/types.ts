@@ -1117,15 +1117,39 @@ export type ExerciseFailureReason = 'RUNBOOK_OUTDATED' | 'DEPENDENCY_MISSING' | 
 export const EXERCISE_FAILURE_REASONS: ExerciseFailureReason[] = ['RUNBOOK_OUTDATED', 'DEPENDENCY_MISSING', 'ACCESS_PROBLEM', 'DATA_LOSS_EXCEEDED', 'TIMEOUT', 'OTHER'];
 
 /** A promise about recovering one asset. Only a failover or a full recovery measures the objectives; a walk through the runbook counts as a pass for the schedule. */
-/** A cloud resource of the inventory, as the discovery tool last said it was (cloud inventory ADR-030), judged when read: PRESENT, MISSING or GONE. */
+/** A cloud resource of the inventory, as the discovery tool last said it was (cloud inventory ADR-030), judged when read: PRESENT, MISSING or GONE (ADR-032). */
+export type ResourceProvider = 'AWS' | 'AZURE';
+export const RESOURCE_PROVIDERS: ResourceProvider[] = ['AWS', 'AZURE'];
+export type ResourceKind = 'COMPUTE' | 'DATABASE' | 'STORAGE' | 'NETWORK' | 'CONTAINER' | 'SERVERLESS' | 'OTHER';
+export const RESOURCE_KINDS: ResourceKind[] = ['COMPUTE', 'DATABASE', 'STORAGE', 'NETWORK', 'CONTAINER', 'SERVERLESS', 'OTHER'];
+export type ResourceState = 'RUNNING' | 'STOPPED' | 'TERMINATED';
+export const RESOURCE_STATES: ResourceState[] = ['RUNNING', 'STOPPED', 'TERMINATED'];
+export type ResourcePresence = 'PRESENT' | 'MISSING' | 'GONE';
+export const RESOURCE_PRESENCES: ResourcePresence[] = ['MISSING', 'PRESENT', 'GONE'];
+
 export interface CloudResource {
   id: string;
+  organisationId: string;
+  accountId: string;
+  provider: ResourceProvider;
+  externalId: string;
   name: string;
-  provider: string;
-  kind: string;
+  kind: ResourceKind;
   region: string;
-  state: string;
-  presence: string;
+  state: ResourceState;
+  tags: Record<string, string>;
+  presence: ResourcePresence;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  updatedAt: string;
+}
+
+export interface ResourceSummary {
+  total: number;
+  byProvider: Record<string, number>;
+  byKind: Record<string, number>;
+  byState: Record<string, number>;
+  byPresence: Record<string, number>;
 }
 
 export interface RecoveryPlan {

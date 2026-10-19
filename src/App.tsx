@@ -17,6 +17,7 @@ import { VendorsPage } from './pages/Vendors';
 import { LicensesPage } from './pages/Licenses';
 import { NetworkPage } from './pages/Network';
 import { CloudCostsPage } from './pages/CloudCosts';
+import { CloudInventoryPage } from './pages/CloudInventory';
 import { ProblemsPage } from './pages/Problems';
 import { ServiceRequestsPage } from './pages/ServiceRequests';
 import { LoginPage } from './pages/Login';
@@ -47,6 +48,7 @@ export function App() {
         <Route path="/licenses" element={<LicensesPage />} />
         <Route path="/network" element={<NetworkPage />} />
         <Route path="/cloud-costs" element={<CloudCostsPage />} />
+        <Route path="/cloud-inventory" element={<CloudInventoryPage />} />
         <Route path="/incidents" element={<IncidentsPage />} />
         <Route path="/knowledge" element={<KnowledgePage />} />
         <Route path="/problems" element={<ProblemsPage />} />
