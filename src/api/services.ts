@@ -8,7 +8,7 @@ import type {
   License, LicenseInput, LicenseLevel, LicenseUnit, UsageReport,
   CloudAccount, CloudAccountInput, CloudProvider, CostCurrency, CostLevel, CostReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
-  BackupPolicy, BackupPolicyInput, BackupRun, ExerciseKind, ExerciseOutcome, PolicyStatus, Protection, Readiness, RecoveryExercise, RecoveryExerciseInput, RecoveryPlan,
+  BackupPolicy, BackupPolicyInput, CloudResource, BackupRun, ExerciseKind, ExerciseOutcome, PolicyStatus, Protection, Readiness, RecoveryExercise, RecoveryExerciseInput, RecoveryPlan,
   RecoveryPlanInput, RunKind, RunOutcome,
   Alert, AlertClass, AlertComponent, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
@@ -472,6 +472,12 @@ export const cloudCostApi = (api: ApiClient) => ({
   control: (id: string, action: 'pause' | 'resume') => api.put(`${CLOUD_COST}/${id}/control/${action}`),
   reports: (filter: { accountId?: string }, limit = 31) => api.get<CostReport[]>(`${CLOUD_COST}/cost/retrieve`, { accountId: filter.accountId, limit: String(limit) }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${CLOUD_COST}/${id}/audit-log/retrieve`),
+});
+
+const CLOUD_INVENTORY = '/it-cloud-inventory/v1';
+
+export const cloudInventoryApi = (api: ApiClient) => ({
+  list: (filter: { presence?: string }, limit = 100) => api.get<CloudResource[]>(`${CLOUD_INVENTORY}/retrieve`, { presence: filter.presence, limit: String(limit) }),
 });
 
 const DR = '/it-dr-registry/v1';

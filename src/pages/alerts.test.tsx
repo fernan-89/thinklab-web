@@ -325,6 +325,7 @@ describe('rules that watch the registries', () => {
       if (r.url.pathname.includes('/it-capacity-registry/')) return policies('capacity');
       if (r.url.pathname.includes('/it-vendor-registry/')) return { body: [{ id: 'agreement-1', reference: 'WTY-1' }] };
       if (r.url.pathname.includes('/it-license-registry/')) return { body: [{ id: 'licence-1', product: 'Office 365 E3' }] };
+      if (r.url.pathname.includes('/it-cloud-inventory/')) return { body: [{ id: 'res-1', name: 'web-1' }] };
       if (r.url.pathname.includes('/it-dr-registry/')) return { body: [{ id: 'plan-1', name: 'Core DB failover' }] };
       return undefined;
     }));
@@ -350,6 +351,9 @@ describe('rules that watch the registries', () => {
     await user.selectOptions(within(form).getByLabelText('Watches'), 'DR');
     await within(form).findByRole('option', { name: 'Core DB failover' });
     expect(within(form).getByRole('option', { name: 'Every recovery plan' })).toBeInTheDocument();
+    await user.selectOptions(within(form).getByLabelText('Watches'), 'CLOUD_INVENTORY');
+    await within(form).findByRole('option', { name: 'web-1' });
+    expect(within(form).getByRole('option', { name: 'Every cloud resource' })).toBeInTheDocument();
     await user.selectOptions(within(form).getByLabelText('Watches'), 'CAPACITY');
     await within(form).findByRole('option', { name: 'capacity policy' });
     await user.selectOptions(within(form).getByLabelText('Covers'), 'capacity-1');
