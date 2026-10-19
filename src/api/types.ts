@@ -931,3 +931,64 @@ export interface UsageReport {
   reportedBy: string;
   reportedAt: string;
 }
+
+// ---- IP address management (it-ipam-service, ADR-030..033) ----
+
+export type SubnetStatus = 'ACTIVE' | 'RETIRED';
+export const SUBNET_STATUSES: SubnetStatus[] = ['ACTIVE', 'RETIRED'];
+/** Judged when read from the addresses allocated, never stored. */
+export type SubnetLevel = 'RETIRED' | 'OK' | 'NEAR_FULL' | 'FULL';
+export const SUBNET_LEVELS: SubnetLevel[] = ['FULL', 'NEAR_FULL', 'OK', 'RETIRED'];
+
+/** An IPv4 range addresses are handed out of; no two active subnets overlap. */
+export interface Subnet {
+  id: string;
+  organisationId: string;
+  name: string;
+  cidr: string;
+  network: string;
+  broadcast: string;
+  prefix: number;
+  vlan?: number;
+  siteId?: string;
+  warnPercent: number;
+  status: SubnetStatus;
+  level: SubnetLevel;
+  used: number;
+  usable: number;
+  free: number;
+  usedPercent?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubnetInput {
+  name: string;
+  cidr: string;
+  vlan?: number;
+  siteId?: string;
+  warnPercent: number;
+}
+
+export type AllocationStatus = 'ALLOCATED' | 'RELEASED';
+
+/** One address handed out of a subnet; held by one allocation at a time. */
+export interface IpAllocation {
+  id: string;
+  organisationId: string;
+  subnetId: string;
+  ip: string;
+  assetId?: string;
+  hostname?: string;
+  status: AllocationStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AllocationInput {
+  subnetId: string;
+  /** Left out: the lowest free address. */
+  ip?: string;
+  assetId?: string;
+  hostname?: string;
+}
