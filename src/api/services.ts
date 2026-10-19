@@ -9,7 +9,7 @@ import type {
   CloudAccount, CloudAccountInput, CloudProvider, CostCurrency, CostLevel, CostReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
-  Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
+  Alert, AlertClass, AlertComponent, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
@@ -373,7 +373,8 @@ export const alertingApi = (api: ApiClient) => ({
   rules: () => api.get<AlertRule[]>(`${ALERTING}/rule/retrieve`),
   createRule: (body: AlertRuleInput) => api.post<AlertRule>(`${ALERTING}/rule/initiate`, body),
   controlRule: (id: string, action: 'pause' | 'resume') => api.put(`${ALERTING}/rule/${id}/control/${action}`),
-  alerts: (filter: { status?: AlertStatus; checkId?: string }) => api.get<Alert[]>(`${ALERTING}/retrieve`, { status: filter.status, checkId: filter.checkId }),
+  alerts: (filter: { status?: AlertStatus; checkId?: string; alertClass?: AlertClass; component?: AlertComponent }) =>
+    api.get<Alert[]>(`${ALERTING}/retrieve`, { status: filter.status, checkId: filter.checkId, alertClass: filter.alertClass, component: filter.component }),
   evaluate: () => api.put<Evaluation>(`${ALERTING}/evaluation/execute`),
   windows: () => api.get<MaintenanceWindow[]>(`${ALERTING}/window/retrieve`),
   createWindow: (body: MaintenanceWindowInput) => api.post<MaintenanceWindow>(`${ALERTING}/window/initiate`, body),

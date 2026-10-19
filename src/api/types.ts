@@ -532,6 +532,34 @@ export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] 
   { value: 'LICENSE', label: 'Software licences', noun: 'software licence' },
 ];
 
+/** What kind of trouble an alert is, from a fixed list (alerting ADR-040). A rule that names none takes the class of its source. */
+export type AlertClass = 'AVAILABILITY' | 'CAPACITY' | 'PROTECTION' | 'CONTRACT';
+export const ALERT_CLASSES: { value: AlertClass; label: string }[] = [
+  { value: 'AVAILABILITY', label: 'Availability' },
+  { value: 'CAPACITY', label: 'Capacity' },
+  { value: 'PROTECTION', label: 'Protection' },
+  { value: 'CONTRACT', label: 'Contract' },
+];
+/** The class an alert of each source has when its rule names none. */
+export const DEFAULT_CLASS: Record<RuleSource, AlertClass> = {
+  HEALTH_CHECK: 'AVAILABILITY', BACKUP: 'PROTECTION', PATCH: 'PROTECTION', CAPACITY: 'CAPACITY', VENDOR: 'CONTRACT', LICENSE: 'CONTRACT',
+};
+
+/** The part of the estate an alert is about, from a fixed list. Optional: unsaid is a valid answer. */
+export type AlertComponent = 'NETWORK' | 'COMPUTE' | 'STORAGE' | 'DATABASE' | 'APPLICATION' | 'SECURITY' | 'CLOUD' | 'OTHER';
+export const ALERT_COMPONENTS: { value: AlertComponent; label: string }[] = [
+  { value: 'NETWORK', label: 'Network' },
+  { value: 'COMPUTE', label: 'Compute' },
+  { value: 'STORAGE', label: 'Storage' },
+  { value: 'DATABASE', label: 'Database' },
+  { value: 'APPLICATION', label: 'Application' },
+  { value: 'SECURITY', label: 'Security' },
+  { value: 'CLOUD', label: 'Cloud' },
+  { value: 'OTHER', label: 'Other' },
+];
+export const classLabel = (value?: AlertClass) => ALERT_CLASSES.find((c) => c.value === value)?.label ?? value;
+export const componentLabel = (value?: AlertComponent) => ALERT_COMPONENTS.find((c) => c.value === value)?.label ?? value;
+
 export interface AlertRule {
   id: string;
   organisationId: string;
@@ -551,6 +579,10 @@ export interface AlertRule {
   escalateAfterMinutes?: number;
   /** Minutes after a resolution in which the check going down again reopens that alert (0 = never). */
   reopenWithinMinutes: number;
+  /** The class that applies: the one the rule names, else the one of its source. Left out by a service older than ADR-040. */
+  alertClass?: AlertClass;
+  /** Left out: the rule says nothing about the part of the estate. */
+  component?: AlertComponent;
   createdAt: string;
   updatedAt: string;
 }
@@ -567,6 +599,9 @@ export interface AlertRuleInput {
   escalateTarget?: string;
   escalateAfterMinutes?: number;
   reopenWithinMinutes?: number;
+  /** Left out: the class of the source. */
+  alertClass?: AlertClass;
+  component?: AlertComponent;
 }
 
 /** What came of one notice to a webhook ({@code OPENED_0}, {@code REOPENED_1}, {@code ESCALATED_0}...: the event and the cycle of the outage). */
@@ -599,6 +634,9 @@ export interface Alert {
   reopenCount: number;
   reopenedAt?: string;
   notices: AlertNotice[];
+  /** What its rule said when it opened; left out for an alert opened before classification existed. */
+  alertClass?: AlertClass;
+  component?: AlertComponent;
 }
 
 export interface Evaluation {
