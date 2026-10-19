@@ -294,3 +294,8 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-full { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
 .badge-released { color: var(--muted); }
 .badge-allocated { color: var(--ok); border-color: var(--ok); }
+
+/* DR registry: readiness of a recovery plan, judged when read */
+.badge-never_tested { color: var(--muted); }
+.badge-test_overdue { color: var(--warn); border-color: var(--warn); }
+.badge-objective_missed, .badge-last_exercise_failed { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }

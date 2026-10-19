@@ -1088,3 +1088,91 @@ export interface CostReport {
   reportedBy: string;
   reportedAt: string;
 }
+
+// ---- DR registry (it-dr-registry-service, ADR-030..033) ----
+
+export type RecoveryStrategy = 'BACKUP_RESTORE' | 'PILOT_LIGHT' | 'WARM_STANDBY' | 'ACTIVE_ACTIVE';
+export const RECOVERY_STRATEGIES: { value: RecoveryStrategy; label: string }[] = [
+  { value: 'BACKUP_RESTORE', label: 'Restore from a backup' },
+  { value: 'PILOT_LIGHT', label: 'Pilot light (a minimal copy kept running)' },
+  { value: 'WARM_STANDBY', label: 'Warm standby (a scaled-down copy)' },
+  { value: 'ACTIVE_ACTIVE', label: 'Active-active (a copy serving traffic)' },
+];
+
+/** The first that applies: judged when read, never stored. */
+export type Readiness = 'PAUSED' | 'LAST_EXERCISE_FAILED' | 'OBJECTIVE_MISSED' | 'TEST_OVERDUE' | 'NEVER_TESTED' | 'READY';
+export const READINESSES: Readiness[] = ['READY', 'NEVER_TESTED', 'TEST_OVERDUE', 'OBJECTIVE_MISSED', 'LAST_EXERCISE_FAILED', 'PAUSED'];
+
+export type ExerciseKind = 'TABLETOP' | 'FAILOVER' | 'FULL_RECOVERY';
+export const EXERCISE_KINDS: { value: ExerciseKind; label: string }[] = [
+  { value: 'TABLETOP', label: 'Walk through the runbook' },
+  { value: 'FAILOVER', label: 'Failover' },
+  { value: 'FULL_RECOVERY', label: 'Full recovery' },
+];
+export type ExerciseOutcome = 'SUCCEEDED' | 'PARTIAL' | 'FAILED';
+export const EXERCISE_OUTCOMES: ExerciseOutcome[] = ['SUCCEEDED', 'PARTIAL', 'FAILED'];
+export type ExerciseFailureReason = 'RUNBOOK_OUTDATED' | 'DEPENDENCY_MISSING' | 'ACCESS_PROBLEM' | 'DATA_LOSS_EXCEEDED' | 'TIMEOUT' | 'OTHER';
+export const EXERCISE_FAILURE_REASONS: ExerciseFailureReason[] = ['RUNBOOK_OUTDATED', 'DEPENDENCY_MISSING', 'ACCESS_PROBLEM', 'DATA_LOSS_EXCEEDED', 'TIMEOUT', 'OTHER'];
+
+/** A promise about recovering one asset. Only a failover or a full recovery measures the objectives; a walk through the runbook counts as a pass for the schedule. */
+export interface RecoveryPlan {
+  id: string;
+  organisationId: string;
+  name: string;
+  assetId: string;
+  strategy: RecoveryStrategy;
+  rtoMinutes: number;
+  rpoMinutes: number;
+  testEveryDays: number;
+  /** An identifier (an article id, a document number), never a sentence. */
+  runbookRef?: string;
+  status: PolicyStatus;
+  readiness: Readiness;
+  nextExerciseDueAt?: string;
+  /** Unknown (left out) until a failover or a full recovery passed. */
+  rtoMet?: boolean;
+  /** Unknown until that pass said how much data it lost. */
+  rpoMet?: boolean;
+  lastExerciseAt?: string;
+  lastOutcome?: ExerciseOutcome;
+  lastPassedAt?: string;
+  lastMeasuredAt?: string;
+  lastMeasuredMinutes?: number;
+  lastMeasuredDataLossMinutes?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecoveryPlanInput {
+  name: string;
+  assetId: string;
+  strategy: RecoveryStrategy;
+  rtoMinutes: number;
+  rpoMinutes: number;
+  testEveryDays: number;
+  runbookRef?: string;
+}
+
+export interface RecoveryExercise {
+  id: string;
+  planId: string;
+  kind: ExerciseKind;
+  outcome: ExerciseOutcome;
+  startedAt: string;
+  finishedAt: string;
+  durationMinutes: number;
+  dataLossMinutes?: number;
+  failureReason?: ExerciseFailureReason;
+  reportedBy: string;
+  reportedAt: string;
+}
+
+export interface RecoveryExerciseInput {
+  planId: string;
+  kind: ExerciseKind;
+  outcome: ExerciseOutcome;
+  startedAt: string;
+  finishedAt: string;
+  dataLossMinutes?: number;
+  failureReason?: ExerciseFailureReason;
+}

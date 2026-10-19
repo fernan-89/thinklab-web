@@ -10,6 +10,7 @@ import { IntegrationsPage } from './pages/Integrations';
 import { HealthPage } from './pages/Health';
 import { AlertsPage } from './pages/Alerts';
 import { BackupsPage } from './pages/Backups';
+import { RecoveryPage } from './pages/Recovery';
 import { PatchesPage } from './pages/Patches';
 import { CapacityPage } from './pages/Capacity';
 import { VendorsPage } from './pages/Vendors';
@@ -39,6 +40,7 @@ export function App() {
         <Route path="/health" element={<HealthPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
         <Route path="/backups" element={<BackupsPage />} />
+        <Route path="/recovery" element={<RecoveryPage />} />
         <Route path="/patches" element={<PatchesPage />} />
         <Route path="/capacity" element={<CapacityPage />} />
         <Route path="/vendors" element={<VendorsPage />} />

@@ -8,7 +8,8 @@ import type {
   License, LicenseInput, LicenseLevel, LicenseUnit, UsageReport,
   CloudAccount, CloudAccountInput, CloudProvider, CostCurrency, CostLevel, CostReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
-  BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
+  BackupPolicy, BackupPolicyInput, BackupRun, ExerciseKind, ExerciseOutcome, PolicyStatus, Protection, Readiness, RecoveryExercise, RecoveryExerciseInput, RecoveryPlan,
+  RecoveryPlanInput, RunKind, RunOutcome,
   Alert, AlertClass, AlertComponent, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
@@ -471,4 +472,17 @@ export const cloudCostApi = (api: ApiClient) => ({
   control: (id: string, action: 'pause' | 'resume') => api.put(`${CLOUD_COST}/${id}/control/${action}`),
   reports: (filter: { accountId?: string }, limit = 31) => api.get<CostReport[]>(`${CLOUD_COST}/cost/retrieve`, { accountId: filter.accountId, limit: String(limit) }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${CLOUD_COST}/${id}/audit-log/retrieve`),
+});
+
+const DR = '/it-dr-registry/v1';
+
+export const drApi = (api: ApiClient) => ({
+  list: (filter: { status?: PolicyStatus; readiness?: Readiness }) => api.get<RecoveryPlan[]>(`${DR}/retrieve`, { status: filter.status, readiness: filter.readiness }),
+  retrieve: (id: string) => api.get<RecoveryPlan>(`${DR}/${id}/retrieve`),
+  create: (body: RecoveryPlanInput) => api.post<RecoveryPlan>(`${DR}/initiate`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${DR}/${id}/control/${action}`),
+  exercises: (filter: { planId?: string; kind?: ExerciseKind; outcome?: ExerciseOutcome }, limit = 20) =>
+    api.get<RecoveryExercise[]>(`${DR}/exercise/retrieve`, { planId: filter.planId, kind: filter.kind, outcome: filter.outcome, limit: String(limit) }),
+  report: (body: RecoveryExerciseInput) => api.post<RecoveryExercise>(`${DR}/exercise/initiate`, body),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${DR}/${id}/audit-log/retrieve`),
 });
