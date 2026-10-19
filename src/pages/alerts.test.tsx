@@ -259,6 +259,7 @@ describe('rules that watch the registries', () => {
       if (r.url.pathname.includes('/it-patch-registry/')) return policies('patch');
       if (r.url.pathname.includes('/it-capacity-registry/')) return policies('capacity');
       if (r.url.pathname.includes('/it-vendor-registry/')) return { body: [{ id: 'agreement-1', reference: 'WTY-1' }] };
+      if (r.url.pathname.includes('/it-license-registry/')) return { body: [{ id: 'licence-1', product: 'Office 365 E3' }] };
       return undefined;
     }));
     renderWithSession(<AlertsPage />, impl, me);
@@ -277,6 +278,9 @@ describe('rules that watch the registries', () => {
     await user.selectOptions(within(form).getByLabelText('Watches'), 'VENDOR');
     await within(form).findByRole('option', { name: 'WTY-1' });
     expect(within(form).getByRole('option', { name: 'Every vendor agreement' })).toBeInTheDocument();
+    await user.selectOptions(within(form).getByLabelText('Watches'), 'LICENSE');
+    await within(form).findByRole('option', { name: 'Office 365 E3' });
+    expect(within(form).getByRole('option', { name: 'Every software licence' })).toBeInTheDocument();
     await user.selectOptions(within(form).getByLabelText('Watches'), 'CAPACITY');
     await within(form).findByRole('option', { name: 'capacity policy' });
     await user.selectOptions(within(form).getByLabelText('Covers'), 'capacity-1');
