@@ -84,6 +84,42 @@ describe('rules and alerts', () => {
     await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('status')).toBeNull());
   });
 
+  it('shows the class and component of a rule and of an alert, and a dash for what was never classified', async () => {
+    const { impl } = fakeFetch(server(
+      [rule({ alertClass: 'CAPACITY', component: 'STORAGE' }), rule({ id: 'r3', name: 'Plain', alertClass: 'AVAILABILITY' }), rule({ id: 'r4', name: 'Old' })],
+      [alert({ alertClass: 'PROTECTION', component: 'DATABASE' }), alert({ id: 'a2', alertClass: 'CONTRACT' }), alert({ id: 'a3' })],
+    ));
+    renderWithSession(<AlertsPage />, impl, me);
+
+    const rules = within(await screen.findByRole('table', { name: 'Rules' }));
+    expect(rules.getByText('Capacity')).toBeInTheDocument();
+    expect(rules.getByText('/ Storage')).toBeInTheDocument();
+    expect(rules.getByText('Availability')).toBeInTheDocument();
+    const alerts = within(await screen.findByRole('table', { name: 'Alerts' }));
+    expect(alerts.getByText('Protection')).toBeInTheDocument();
+    expect(alerts.getByText('/ Database')).toBeInTheDocument();
+    expect(alerts.getByText('Contract')).toBeInTheDocument();
+    // two alerts and a rule with no class at all: a dash, never a guess
+    expect(alerts.getAllByText('-').length).toBeGreaterThan(0);
+  });
+
+  it('filters alerts by class and by component, and clears the filters', async () => {
+    const { impl, calls } = fakeFetch(server());
+    renderWithSession(<AlertsPage />, impl, me);
+    const user = userEvent.setup();
+    await screen.findByRole('table', { name: 'Alerts' });
+
+    await user.selectOptions(screen.getByLabelText('Alert class'), 'CAPACITY');
+    await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('alertClass')).toBe('CAPACITY'));
+    await user.selectOptions(screen.getByLabelText('Alert component'), 'STORAGE');
+    await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('component')).toBe('STORAGE'));
+    expect(calls.at(-1)!.url.searchParams.get('alertClass')).toBe('CAPACITY');
+    await user.selectOptions(screen.getByLabelText('Alert class'), '');
+    await user.selectOptions(screen.getByLabelText('Alert component'), '');
+    await waitFor(() => expect(calls.at(-1)!.url.searchParams.get('alertClass')).toBeNull());
+    expect(calls.at(-1)!.url.searchParams.get('component')).toBeNull();
+  });
+
   it('shows the problem when the rules cannot be read', async () => {
     const { impl } = fakeFetch(server([], [], (r) => (r.url.pathname.endsWith('/rule/retrieve')
       ? { status: 403, body: { title: 'Forbidden', error_code: 'ERR-ALR-00403', detail: 'Staff only.' } } : undefined)));
@@ -160,6 +196,35 @@ describe('a new rule', () => {
     await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
     expect(calls.find((c) => c.method === 'POST')!.body).toMatchObject({ name: 'All', impact: 'MEDIUM', urgency: 'MEDIUM' });
     expect(calls.find((c) => c.method === 'POST')!.body).not.toHaveProperty('checkId');
+  });
+
+  it('offers a class and a component; the class defaults to the one of what the rule watches', async () => {
+    const { user, form, calls } = await open();
+    const classSelect = within(form).getByLabelText('Class');
+    expect(within(classSelect).getByRole('option', { name: 'Same as what it watches (Availability)' })).toBeInTheDocument();
+    await user.selectOptions(within(form).getByLabelText('Watches'), 'BACKUP');
+    expect(within(classSelect).getByRole('option', { name: 'Same as what it watches (Protection)' })).toBeInTheDocument();
+
+    await user.type(within(form).getByLabelText('Name'), 'Disks');
+    await user.type(within(form).getByLabelText(/Requester/), 'u1');
+    await user.selectOptions(classSelect, 'CAPACITY');
+    await user.selectOptions(within(form).getByLabelText('Component'), 'STORAGE');
+    await user.click(within(form).getByRole('button', { name: 'Create rule' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    expect(calls.find((c) => c.method === 'POST')!.body).toMatchObject({ source: 'BACKUP', alertClass: 'CAPACITY', component: 'STORAGE' });
+  });
+
+  it('a rule that names no class and no component sends neither', async () => {
+    const { user, form, calls } = await open();
+    await user.type(within(form).getByLabelText('Name'), 'Plain');
+    await user.type(within(form).getByLabelText(/Requester/), 'u1');
+    await user.click(within(form).getByRole('button', { name: 'Create rule' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+    const body = calls.find((c) => c.method === 'POST')!.body;
+    expect(body).not.toHaveProperty('alertClass');
+    expect(body).not.toHaveProperty('component');
   });
 
   it('shows why a rule is refused and keeps the form; it can be cancelled', async () => {

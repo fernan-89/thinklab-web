@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { alertingApi, backupApi, capacityApi, healthApi, licenseApi, patchApi, vendorApi } from '../api/services';
-import { ALERT_STATUSES, RULE_SOURCES, SEVERITIES, type Alert, type AlertNotice, type AlertRule, type AlertStatus, type Evaluation, type MaintenanceWindow, type RuleSource, type Severity } from '../api/types';
+import { ALERT_CLASSES, ALERT_COMPONENTS, ALERT_STATUSES, DEFAULT_CLASS, RULE_SOURCES, SEVERITIES, classLabel, componentLabel, type Alert, type AlertClass, type AlertComponent, type AlertNotice, type AlertRule, type AlertStatus, type Evaluation, type MaintenanceWindow, type RuleSource, type Severity } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
@@ -25,6 +25,8 @@ export function AlertsPage() {
   const { api } = useSession();
   const alerting = alertingApi(api);
   const [statusFilter, setStatusFilter] = useState<AlertStatus | ''>('');
+  const [classFilter, setClassFilter] = useState<AlertClass | ''>('');
+  const [componentFilter, setComponentFilter] = useState<AlertComponent | ''>('');
   const [creating, setCreating] = useState(false);
   const [planning, setPlanning] = useState(false);
   const [evaluation, setEvaluation] = useState<Evaluation>();
@@ -32,7 +34,7 @@ export function AlertsPage() {
   const [busy, setBusy] = useState(false);
 
   const rules = useAsync(() => alerting.rules(), []);
-  const alerts = useAsync(() => alerting.alerts({ status: statusFilter || undefined }), [statusFilter]);
+  const alerts = useAsync(() => alerting.alerts({ status: statusFilter || undefined, alertClass: classFilter || undefined, component: componentFilter || undefined }), [statusFilter, classFilter, componentFilter]);
   const windows = useAsync(() => alerting.windows(), []);
 
   async function run(action: () => Promise<unknown>) {
@@ -52,6 +54,10 @@ export function AlertsPage() {
 
   const ruleName = (id: string) => rules.data?.find((rule) => rule.id === id)?.name ?? id;
   const checkLabel = (id?: string) => (id ? <code>{id}</code> : 'every check');
+  /** The class and, when the rule or the alert says one, the part of the estate: "Capacity / Storage". */
+  const kind = (alertClass?: AlertClass, component?: AlertComponent) => (alertClass || component
+    ? <>{classLabel(alertClass) ?? <span className="muted">-</span>}{component ? <span className="muted"> / {componentLabel(component)}</span> : null}</>
+    : <span className="muted">-</span>);
   const noun = (source?: RuleSource) => RULE_SOURCES.find((s) => s.value === source)?.noun ?? 'check';
   const coversLabel = (rule: AlertRule) => (rule.checkId
     ? <><code>{rule.checkId}</code>{rule.source && rule.source !== 'HEALTH_CHECK' ? <span className="muted"> ({noun(rule.source)})</span> : null}</>
@@ -78,12 +84,13 @@ export function AlertsPage() {
       <ProblemBanner error={rules.error} />
       {rules.data?.length === 0 && !rules.loading ? <Empty>No rules yet: nothing will be opened.</Empty> : (
         <table aria-label="Rules">
-          <thead><tr><th>Rule</th><th>Covers</th><th>Impact</th><th>Urgency</th><th>Tells</th><th>Escalates</th><th>Reopens within</th><th>Status</th><th /></tr></thead>
+          <thead><tr><th>Rule</th><th>Covers</th><th>Class</th><th>Impact</th><th>Urgency</th><th>Tells</th><th>Escalates</th><th>Reopens within</th><th>Status</th><th /></tr></thead>
           <tbody>
             {rules.data?.map((rule: AlertRule) => (
               <tr key={rule.id}>
                 <td>{rule.name}</td>
                 <td>{coversLabel(rule)}</td>
+                <td>{kind(rule.alertClass, rule.component)}</td>
                 <td>{rule.impact}</td>
                 <td>{rule.urgency}</td>
                 <td>{rule.notifyTarget ? <code>{rule.notifyTarget}</code> : <span className="muted">-</span>}</td>
@@ -128,16 +135,25 @@ export function AlertsPage() {
           <option value="">Open and resolved</option>
           {ALERT_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
+        <select aria-label="Alert class" value={classFilter} onChange={(e) => setClassFilter(e.target.value as AlertClass | '')}>
+          <option value="">Any class</option>
+          {ALERT_CLASSES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        <select aria-label="Alert component" value={componentFilter} onChange={(e) => setComponentFilter(e.target.value as AlertComponent | '')}>
+          <option value="">Any component</option>
+          {ALERT_COMPONENTS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
         <span className="muted">{alerts.loading ? 'Loading...' : `${alerts.data?.length ?? 0} shown`}</span>
       </div>
       <ProblemBanner error={alerts.error} />
       {alerts.data?.length === 0 && !alerts.loading ? <Empty>No alerts match.</Empty> : (
         <table aria-label="Alerts">
-          <thead><tr><th>Check</th><th>Status</th><th>Opened</th><th>Resolved</th><th>Why</th><th>Incident</th><th>Rule</th><th>Notices</th></tr></thead>
+          <thead><tr><th>Check</th><th>Class</th><th>Status</th><th>Opened</th><th>Resolved</th><th>Why</th><th>Incident</th><th>Rule</th><th>Notices</th></tr></thead>
           <tbody>
             {alerts.data?.map((alert: Alert) => (
               <tr key={alert.id}>
                 <td>{alert.checkName}</td>
+                <td>{kind(alert.alertClass, alert.component)}</td>
                 <td><StatusBadge status={alert.status} />{alert.reopenCount > 0 && <span className="muted"> reopened {alert.reopenCount}x</span>}</td>
                 <td>{new Date(alert.openedAt).toLocaleString()}</td>
                 <td>{alert.resolvedAt ? new Date(alert.resolvedAt).toLocaleString() : <span className="muted">-</span>}</td>
@@ -171,6 +187,8 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
   const [checkId, setCheckId] = useState('');
   const [impact, setImpact] = useState<Severity>('MEDIUM');
   const [urgency, setUrgency] = useState<Severity>('MEDIUM');
+  const [alertClass, setAlertClass] = useState<AlertClass | ''>('');
+  const [component, setComponent] = useState<AlertComponent | ''>('');
   const [requesterId, setRequesterId] = useState('');
   const [notifyTarget, setNotifyTarget] = useState('');
   const [escalateTarget, setEscalateTarget] = useState('');
@@ -192,6 +210,8 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
         escalateTarget: escalateTarget.trim() || undefined,
         escalateAfterMinutes: escalateTarget.trim() ? Number(escalateAfter) : undefined,
         reopenWithinMinutes: Number(reopenWithin),
+        alertClass: alertClass || undefined,
+        component: component || undefined,
       });
       onCreated();
     } catch (failure) {
@@ -221,6 +241,18 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
       </label>
       <label>Urgency
         <select value={urgency} onChange={(e) => setUrgency(e.target.value as Severity)}>{SEVERITIES.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+      </label>
+      <label>Class
+        <select value={alertClass} onChange={(e) => setAlertClass(e.target.value as AlertClass | '')}>
+          <option value="">Same as what it watches ({classLabel(DEFAULT_CLASS[source])})</option>
+          {ALERT_CLASSES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+      </label>
+      <label>Component
+        <select value={component} onChange={(e) => setComponent(e.target.value as AlertComponent | '')}>
+          <option value="">Not said</option>
+          {ALERT_COMPONENTS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
       </label>
       <label>Requester the incident is filed for (id)<input value={requesterId} onChange={(e) => setRequesterId(e.target.value)} /></label>
       <label>Tell this webhook (variable name)<input value={notifyTarget} placeholder="THINKLAB_ALERT_HOOK_OPS" onChange={(e) => setNotifyTarget(e.target.value)} /></label>
