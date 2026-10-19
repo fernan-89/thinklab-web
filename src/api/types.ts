@@ -522,7 +522,7 @@ export type AlertStatus = 'OPEN' | 'RESOLVED';
 export const ALERT_STATUSES: AlertStatus[] = ['OPEN', 'RESOLVED'];
 
 /** What a rule watches: the health checks, or the promises the registries judge (a broken backup, patch or capacity policy). */
-export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY' | 'VENDOR' | 'LICENSE';
+export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY' | 'VENDOR' | 'LICENSE' | 'DR';
 export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] = [
   { value: 'HEALTH_CHECK', label: 'Health checks', noun: 'check' },
   { value: 'BACKUP', label: 'Backup policies', noun: 'backup policy' },
@@ -530,6 +530,7 @@ export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] 
   { value: 'CAPACITY', label: 'Capacity policies', noun: 'capacity policy' },
   { value: 'VENDOR', label: 'Vendor agreements', noun: 'vendor agreement' },
   { value: 'LICENSE', label: 'Software licences', noun: 'software licence' },
+  { value: 'DR', label: 'Recovery plans', noun: 'recovery plan' },
 ];
 
 /** What kind of trouble an alert is, from a fixed list (alerting ADR-040). A rule that names none takes the class of its source. */
@@ -542,7 +543,7 @@ export const ALERT_CLASSES: { value: AlertClass; label: string }[] = [
 ];
 /** The class an alert of each source has when its rule names none. */
 export const DEFAULT_CLASS: Record<RuleSource, AlertClass> = {
-  HEALTH_CHECK: 'AVAILABILITY', BACKUP: 'PROTECTION', PATCH: 'PROTECTION', CAPACITY: 'CAPACITY', VENDOR: 'CONTRACT', LICENSE: 'CONTRACT',
+  HEALTH_CHECK: 'AVAILABILITY', BACKUP: 'PROTECTION', PATCH: 'PROTECTION', CAPACITY: 'CAPACITY', VENDOR: 'CONTRACT', LICENSE: 'CONTRACT', DR: 'PROTECTION',
 };
 
 /** The part of the estate an alert is about, from a fixed list. Optional: unsaid is a valid answer. */
@@ -871,7 +872,7 @@ export interface VendorInput {
   category: VendorCategory;
 }
 
-export type AgreementKind = 'CONTRACT' | 'WARRANTY' | 'SUPPORT' | 'LICENSE';
+export type AgreementKind = 'CONTRACT' | 'WARRANTY' | 'SUPPORT' | 'LICENSE' | 'DR';
 export const AGREEMENT_KINDS: AgreementKind[] = ['CONTRACT', 'WARRANTY', 'SUPPORT', 'LICENSE'];
 /** Judged when read, never stored: the day it is read decides. */
 export type AgreementStanding = 'PAUSED' | 'NOT_STARTED' | 'IN_FORCE' | 'EXPIRING' | 'EXPIRED';
