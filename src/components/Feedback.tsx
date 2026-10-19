@@ -22,7 +22,7 @@ export function ProblemBanner({ error }: { error: Error | undefined }) {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  return <span className={`badge badge-${status.toLowerCase()}`}>{status.replace('_', ' ')}</span>;
+  return <span className={`badge badge-${status.toLowerCase()}`}>{status.replace(/_/g, ' ')}</span>;
 }
 
 export function Empty({ children }: { children: string }) {
