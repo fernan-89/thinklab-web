@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { alertingApi, backupApi, capacityApi, healthApi, licenseApi, patchApi, vendorApi } from '../api/services';
+import { alertingApi, backupApi, capacityApi, drApi, healthApi, licenseApi, patchApi, vendorApi } from '../api/services';
 import { ALERT_CLASSES, ALERT_COMPONENTS, ALERT_STATUSES, DEFAULT_CLASS, RULE_SOURCES, SEVERITIES, classLabel, componentLabel, type Alert, type AlertClass, type AlertComponent, type AlertNotice, type AlertRule, type AlertStatus, type Evaluation, type MaintenanceWindow, type RuleSource, type Severity } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
@@ -179,6 +179,7 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
     if (source === 'BACKUP') return backupApi(api).list({});
     if (source === 'PATCH') return patchApi(api).list({});
     if (source === 'CAPACITY') return capacityApi(api).list({});
+    if (source === 'DR') return drApi(api).list({});
     if (source === 'LICENSE') return licenseApi(api).list({}).then((licenses) => licenses.map((license) => ({ id: license.id, name: license.product })));
     if (source === 'VENDOR') return vendorApi(api).agreements({}).then((agreements) => agreements.map((agreement) => ({ id: agreement.id, name: agreement.reference })));
     return healthApi(api).list({});
