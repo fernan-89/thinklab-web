@@ -25,6 +25,7 @@ export function Layout() {
           <NavLink to="/capacity">Capacity</NavLink>
           <NavLink to="/vendors">Vendors</NavLink>
           <NavLink to="/licenses">Licenses</NavLink>
+          <NavLink to="/procurement">Procurement</NavLink>
           <NavLink to="/network">Network</NavLink>
           <NavLink to="/cloud-costs">Cloud costs</NavLink>
           <NavLink to="/cloud-inventory">Cloud inventory</NavLink>

@@ -15,6 +15,7 @@ import { PatchesPage } from './pages/Patches';
 import { CapacityPage } from './pages/Capacity';
 import { VendorsPage } from './pages/Vendors';
 import { LicensesPage } from './pages/Licenses';
+import { ProcurementPage } from './pages/Procurement';
 import { NetworkPage } from './pages/Network';
 import { CloudCostsPage } from './pages/CloudCosts';
 import { CloudInventoryPage } from './pages/CloudInventory';
@@ -46,6 +47,7 @@ export function App() {
         <Route path="/capacity" element={<CapacityPage />} />
         <Route path="/vendors" element={<VendorsPage />} />
         <Route path="/licenses" element={<LicensesPage />} />
+        <Route path="/procurement" element={<ProcurementPage />} />
         <Route path="/network" element={<NetworkPage />} />
         <Route path="/cloud-costs" element={<CloudCostsPage />} />
         <Route path="/cloud-inventory" element={<CloudInventoryPage />} />
