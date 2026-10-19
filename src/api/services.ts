@@ -4,6 +4,7 @@ import type {
   CheckStatus, CheckType, Health, HealthCheck, HealthSummary, ProbeResult,
   PatchCompliance, PatchFinding, PatchPolicy, PatchPolicyInput, FindingStatus, WaiverReason,
   Agreement, AgreementInput, AgreementKind, AgreementStanding, AgreementStatus, AgreementUpdate, Vendor, VendorCategory, VendorInput, VendorStatus,
+  AllocationInput, AllocationStatus, IpAllocation, Subnet, SubnetInput, SubnetLevel, SubnetStatus,
   License, LicenseInput, LicenseLevel, LicenseUnit, UsageReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
@@ -442,4 +443,18 @@ export const licenseApi = (api: ApiClient) => ({
   control: (id: string, action: 'pause' | 'resume') => api.put(`${LICENSE}/${id}/control/${action}`),
   reports: (filter: { licenseId?: string }, limit = 20) => api.get<UsageReport[]>(`${LICENSE}/usage/retrieve`, { licenseId: filter.licenseId, limit: String(limit) }),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${LICENSE}/${id}/audit-log/retrieve`),
+});
+
+const IPAM = '/it-ipam/v1';
+
+export const ipamApi = (api: ApiClient) => ({
+  subnets: (filter: { status?: SubnetStatus; level?: SubnetLevel }) => api.get<Subnet[]>(`${IPAM}/retrieve`, { status: filter.status, level: filter.level }),
+  subnet: (id: string) => api.get<Subnet>(`${IPAM}/${id}/retrieve`),
+  createSubnet: (body: SubnetInput) => api.post<Subnet>(`${IPAM}/initiate`, body),
+  controlSubnet: (id: string, action: 'retire' | 'reactivate') => api.put(`${IPAM}/${id}/control/${action}`),
+  subnetAuditLog: (id: string) => api.get<AuditEntry[]>(`${IPAM}/${id}/audit-log/retrieve`),
+  allocations: (filter: { subnetId?: string; status?: AllocationStatus }, limit = 200) =>
+    api.get<IpAllocation[]>(`${IPAM}/allocation/retrieve`, { subnetId: filter.subnetId, status: filter.status, limit: String(limit) }),
+  allocate: (body: AllocationInput) => api.post<IpAllocation>(`${IPAM}/allocation/initiate`, body),
+  release: (id: string) => api.put(`${IPAM}/allocation/${id}/control/release`),
 });

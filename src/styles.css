@@ -284,3 +284,9 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 /* Licence registry: seats in use against seats bought, judged when read */
 .badge-near_limit { color: var(--warn); border-color: var(--warn); }
 .badge-over_limit { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+
+/* IP address management: how full a subnet is, judged when read */
+.badge-near_full { color: var(--warn); border-color: var(--warn); }
+.badge-full { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+.badge-released { color: var(--muted); }
+.badge-allocated { color: var(--ok); border-color: var(--ok); }
