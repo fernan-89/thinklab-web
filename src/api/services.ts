@@ -6,6 +6,7 @@ import type {
   Agreement, AgreementInput, AgreementKind, AgreementStanding, AgreementStatus, AgreementUpdate, Vendor, VendorCategory, VendorInput, VendorStatus,
   AllocationInput, AllocationStatus, IpAllocation, Subnet, SubnetInput, SubnetLevel, SubnetStatus,
   License, LicenseInput, LicenseLevel, LicenseUnit, UsageReport,
+  CloudAccount, CloudAccountInput, CloudProvider, CostCurrency, CostLevel, CostReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, BackupRun, PolicyStatus, Protection, RunKind, RunOutcome,
   Alert, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
@@ -457,4 +458,16 @@ export const ipamApi = (api: ApiClient) => ({
     api.get<IpAllocation[]>(`${IPAM}/allocation/retrieve`, { subnetId: filter.subnetId, status: filter.status, limit: String(limit) }),
   allocate: (body: AllocationInput) => api.post<IpAllocation>(`${IPAM}/allocation/initiate`, body),
   release: (id: string) => api.put(`${IPAM}/allocation/${id}/control/release`),
+});
+
+const CLOUD_COST = '/it-cloud-cost/v1';
+
+export const cloudCostApi = (api: ApiClient) => ({
+  list: (filter: { status?: PolicyStatus; provider?: CloudProvider; currency?: CostCurrency; level?: CostLevel }) =>
+    api.get<CloudAccount[]>(`${CLOUD_COST}/retrieve`, { status: filter.status, provider: filter.provider, currency: filter.currency, level: filter.level }),
+  retrieve: (id: string) => api.get<CloudAccount>(`${CLOUD_COST}/${id}/retrieve`),
+  create: (body: CloudAccountInput) => api.post<CloudAccount>(`${CLOUD_COST}/initiate`, body),
+  control: (id: string, action: 'pause' | 'resume') => api.put(`${CLOUD_COST}/${id}/control/${action}`),
+  reports: (filter: { accountId?: string }, limit = 31) => api.get<CostReport[]>(`${CLOUD_COST}/cost/retrieve`, { accountId: filter.accountId, limit: String(limit) }),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${CLOUD_COST}/${id}/audit-log/retrieve`),
 });
