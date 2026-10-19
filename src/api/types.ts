@@ -992,3 +992,61 @@ export interface AllocationInput {
   assetId?: string;
   hostname?: string;
 }
+
+// ---- Cloud cost registry (it-cloud-cost-service, ADR-030..033) ----
+
+export type CloudProvider = 'AWS' | 'AZURE' | 'GCP' | 'OCI' | 'OTHER';
+export const CLOUD_PROVIDERS: CloudProvider[] = ['AWS', 'AZURE', 'GCP', 'OCI', 'OTHER'];
+/** One currency per account; amounts are never converted. */
+export type CostCurrency = 'BRL' | 'USD' | 'EUR';
+export const COST_CURRENCIES: CostCurrency[] = ['BRL', 'USD', 'EUR'];
+/** Judged when read over the current month, never stored. */
+export type CostLevel = 'PAUSED' | 'NO_DATA' | 'OK' | 'NEAR_BUDGET' | 'OVER_BUDGET';
+export const COST_LEVELS: CostLevel[] = ['OVER_BUDGET', 'NEAR_BUDGET', 'OK', 'NO_DATA', 'PAUSED'];
+
+/** A provider account with a monthly budget, and how its current month stands. */
+export interface CloudAccount {
+  id: string;
+  organisationId: string;
+  name: string;
+  provider: CloudProvider;
+  externalId: string;
+  currency: CostCurrency;
+  monthlyBudget: number;
+  warnPercent: number;
+  reportEveryHours: number;
+  vendorId?: string;
+  status: PolicyStatus;
+  /** The month judged, as yyyy-MM. */
+  month: string;
+  level: CostLevel;
+  spent?: number;
+  /** A straight line from the days reported to the month's end. */
+  projected?: number;
+  usedPercent?: number;
+  stale: boolean;
+  lastReportedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CloudAccountInput {
+  name: string;
+  provider: CloudProvider;
+  externalId: string;
+  currency: CostCurrency;
+  monthlyBudget: number;
+  warnPercent: number;
+  reportEveryHours: number;
+  vendorId?: string;
+}
+
+/** What one day of an account cost, as the billing tool reported it. */
+export interface CostReport {
+  id: string;
+  accountId: string;
+  day: string;
+  amount: number;
+  reportedBy: string;
+  reportedAt: string;
+}

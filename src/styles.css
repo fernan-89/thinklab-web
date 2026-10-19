@@ -285,6 +285,10 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-near_limit { color: var(--warn); border-color: var(--warn); }
 .badge-over_limit { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
 
+/* Cloud costs: the month spent and where it is heading, judged when read */
+.badge-near_budget { color: var(--warn); border-color: var(--warn); }
+.badge-over_budget { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
+
 /* IP address management: how full a subnet is, judged when read */
 .badge-near_full { color: var(--warn); border-color: var(--warn); }
 .badge-full { color: var(--danger-text); border-color: var(--danger-text); font-weight: 700; }
