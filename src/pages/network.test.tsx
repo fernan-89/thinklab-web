@@ -182,11 +182,12 @@ describe('a subnet in detail', () => {
   it('a subnet with nothing handed out says so; a retired one offers no allocation and can be reactivated; it closes', async () => {
     const { user, detail, calls } = await select([subnet({ vlan: undefined, usedPercent: undefined })], () => undefined, []);
     expect(await within(detail).findByText('No address handed out yet.')).toBeInTheDocument();
-    expect(within(detail).getByText(/^10.20.0.0 to 10.20.0.255\)$|10.20.0.0 to 10.20.0.255\)/)).toBeInTheDocument();
+    expect(within(detail).getByText(/\(10\.20\.0\.0 to 10\.20\.0\.255\)/)).toBeInTheDocument();
     await user.click(within(detail).getByRole('button', { name: 'Retire' }));
     await waitFor(() => expect(calls.some((c) => c.method === 'PUT' && c.url.pathname.endsWith('/control/retire'))).toBe(true));
-    await user.click(await within(detail).findByRole('button', { name: 'Reactivate' }));
+    const reactivate = await within(detail).findByRole('button', { name: 'Reactivate' });
     expect(within(detail).queryByRole('form', { name: 'Allocate' })).not.toBeInTheDocument();
+    await user.click(reactivate);
     await waitFor(() => expect(calls.some((c) => c.method === 'PUT' && c.url.pathname.endsWith('/control/reactivate'))).toBe(true));
     await user.click(within(detail).getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('complementary', { name: 'Subnet detail' })).not.toBeInTheDocument();
