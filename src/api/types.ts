@@ -522,7 +522,7 @@ export type AlertStatus = 'OPEN' | 'RESOLVED';
 export const ALERT_STATUSES: AlertStatus[] = ['OPEN', 'RESOLVED'];
 
 /** What a rule watches: the health checks, or the promises the registries judge (a broken backup, patch or capacity policy). */
-export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY' | 'VENDOR' | 'LICENSE' | 'DR';
+export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY' | 'VENDOR' | 'LICENSE' | 'DR' | 'CLOUD_INVENTORY';
 export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] = [
   { value: 'HEALTH_CHECK', label: 'Health checks', noun: 'check' },
   { value: 'BACKUP', label: 'Backup policies', noun: 'backup policy' },
@@ -531,6 +531,7 @@ export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] 
   { value: 'VENDOR', label: 'Vendor agreements', noun: 'vendor agreement' },
   { value: 'LICENSE', label: 'Software licences', noun: 'software licence' },
   { value: 'DR', label: 'Recovery plans', noun: 'recovery plan' },
+  { value: 'CLOUD_INVENTORY', label: 'Cloud resources', noun: 'cloud resource' },
 ];
 
 /** What kind of trouble an alert is, from a fixed list (alerting ADR-040). A rule that names none takes the class of its source. */
@@ -543,7 +544,7 @@ export const ALERT_CLASSES: { value: AlertClass; label: string }[] = [
 ];
 /** The class an alert of each source has when its rule names none. */
 export const DEFAULT_CLASS: Record<RuleSource, AlertClass> = {
-  HEALTH_CHECK: 'AVAILABILITY', BACKUP: 'PROTECTION', PATCH: 'PROTECTION', CAPACITY: 'CAPACITY', VENDOR: 'CONTRACT', LICENSE: 'CONTRACT', DR: 'PROTECTION',
+  HEALTH_CHECK: 'AVAILABILITY', BACKUP: 'PROTECTION', PATCH: 'PROTECTION', CAPACITY: 'CAPACITY', VENDOR: 'CONTRACT', LICENSE: 'CONTRACT', DR: 'PROTECTION', CLOUD_INVENTORY: 'AVAILABILITY',
 };
 
 /** The part of the estate an alert is about, from a fixed list. Optional: unsaid is a valid answer. */
@@ -1116,6 +1117,41 @@ export type ExerciseFailureReason = 'RUNBOOK_OUTDATED' | 'DEPENDENCY_MISSING' | 
 export const EXERCISE_FAILURE_REASONS: ExerciseFailureReason[] = ['RUNBOOK_OUTDATED', 'DEPENDENCY_MISSING', 'ACCESS_PROBLEM', 'DATA_LOSS_EXCEEDED', 'TIMEOUT', 'OTHER'];
 
 /** A promise about recovering one asset. Only a failover or a full recovery measures the objectives; a walk through the runbook counts as a pass for the schedule. */
+/** A cloud resource of the inventory, as the discovery tool last said it was (cloud inventory ADR-030), judged when read: PRESENT, MISSING or GONE (ADR-032). */
+export type ResourceProvider = 'AWS' | 'AZURE';
+export const RESOURCE_PROVIDERS: ResourceProvider[] = ['AWS', 'AZURE'];
+export type ResourceKind = 'COMPUTE' | 'DATABASE' | 'STORAGE' | 'NETWORK' | 'CONTAINER' | 'SERVERLESS' | 'OTHER';
+export const RESOURCE_KINDS: ResourceKind[] = ['COMPUTE', 'DATABASE', 'STORAGE', 'NETWORK', 'CONTAINER', 'SERVERLESS', 'OTHER'];
+export type ResourceState = 'RUNNING' | 'STOPPED' | 'TERMINATED';
+export const RESOURCE_STATES: ResourceState[] = ['RUNNING', 'STOPPED', 'TERMINATED'];
+export type ResourcePresence = 'PRESENT' | 'MISSING' | 'GONE';
+export const RESOURCE_PRESENCES: ResourcePresence[] = ['MISSING', 'PRESENT', 'GONE'];
+
+export interface CloudResource {
+  id: string;
+  organisationId: string;
+  accountId: string;
+  provider: ResourceProvider;
+  externalId: string;
+  name: string;
+  kind: ResourceKind;
+  region: string;
+  state: ResourceState;
+  tags: Record<string, string>;
+  presence: ResourcePresence;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  updatedAt: string;
+}
+
+export interface ResourceSummary {
+  total: number;
+  byProvider: Record<string, number>;
+  byKind: Record<string, number>;
+  byState: Record<string, number>;
+  byPresence: Record<string, number>;
+}
+
 export interface RecoveryPlan {
   id: string;
   organisationId: string;
