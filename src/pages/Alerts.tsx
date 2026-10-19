@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { alertingApi, backupApi, capacityApi, healthApi, patchApi, vendorApi } from '../api/services';
+import { alertingApi, backupApi, capacityApi, healthApi, licenseApi, patchApi, vendorApi } from '../api/services';
 import { ALERT_STATUSES, RULE_SOURCES, SEVERITIES, type Alert, type AlertNotice, type AlertRule, type AlertStatus, type Evaluation, type MaintenanceWindow, type RuleSource, type Severity } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
@@ -67,7 +67,7 @@ export function AlertsPage() {
           <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New rule</button>
         </div>
       </div>
-      <p className="muted">When a check goes down, a backup, patch or capacity promise is broken, or a vendor agreement is about to end, the platform opens one incident for it, and adds an internal note when it is back. A check that goes down again soon after is reopened on the same incident, and the people a rule names are told through a webhook. The incident is never closed for you.</p>
+      <p className="muted">When a check goes down, a backup, patch or capacity promise is broken, a vendor agreement is about to end, or a licence is over its limit, the platform opens one incident for it, and adds an internal note when it is back. A check that goes down again soon after is reopened on the same incident, and the people a rule names are told through a webhook. The incident is never closed for you.</p>
       {evaluation && <p role="status">Looked now: {evaluation.opened} alert(s) opened, {evaluation.resolved} resolved, {evaluation.incidentsOpened} incident(s) filed, {evaluation.reopened} reopened, {evaluation.notified} notice(s) sent.</p>}
       <ProblemBanner error={actionError} />
       {creating && <NewRuleForm onCancel={() => setCreating(false)} onCreated={() => { setCreating(false); rules.reload(); }} />}
@@ -163,6 +163,7 @@ function NewRuleForm({ onCreated, onCancel }: { onCreated: () => void; onCancel:
     if (source === 'BACKUP') return backupApi(api).list({});
     if (source === 'PATCH') return patchApi(api).list({});
     if (source === 'CAPACITY') return capacityApi(api).list({});
+    if (source === 'LICENSE') return licenseApi(api).list({}).then((licenses) => licenses.map((license) => ({ id: license.id, name: license.product })));
     if (source === 'VENDOR') return vendorApi(api).agreements({}).then((agreements) => agreements.map((agreement) => ({ id: agreement.id, name: agreement.reference })));
     return healthApi(api).list({});
   }, [source]);

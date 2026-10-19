@@ -522,13 +522,14 @@ export type AlertStatus = 'OPEN' | 'RESOLVED';
 export const ALERT_STATUSES: AlertStatus[] = ['OPEN', 'RESOLVED'];
 
 /** What a rule watches: the health checks, or the promises the registries judge (a broken backup, patch or capacity policy). */
-export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY' | 'VENDOR';
+export type RuleSource = 'HEALTH_CHECK' | 'BACKUP' | 'PATCH' | 'CAPACITY' | 'VENDOR' | 'LICENSE';
 export const RULE_SOURCES: { value: RuleSource; label: string; noun: string }[] = [
   { value: 'HEALTH_CHECK', label: 'Health checks', noun: 'check' },
   { value: 'BACKUP', label: 'Backup policies', noun: 'backup policy' },
   { value: 'PATCH', label: 'Patch policies', noun: 'patch policy' },
   { value: 'CAPACITY', label: 'Capacity policies', noun: 'capacity policy' },
   { value: 'VENDOR', label: 'Vendor agreements', noun: 'vendor agreement' },
+  { value: 'LICENSE', label: 'Software licences', noun: 'software licence' },
 ];
 
 export interface AlertRule {
