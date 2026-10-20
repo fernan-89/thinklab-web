@@ -8,7 +8,7 @@ import type {
   License, LicenseInput, LicenseLevel, LicenseUnit, UsageReport,
   CloudAccount, CloudAccountInput, CloudProvider, CostCurrency, CostLevel, CostReport,
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
-  BackupPolicy, BackupPolicyInput, CloudResource, ResourceKind, ResourcePresence, ResourceProvider, ResourceState, ResourceSummary, BackupRun, ExerciseKind, ExerciseOutcome, PolicyStatus, Protection, Readiness, RecoveryExercise, RecoveryExerciseInput, RecoveryPlan,
+  BackupPolicy, BackupPolicyInput, OrderFulfilment, OrderReceipt, OrderStatus, PurchaseOrder, PurchaseOrderInput, CloudResource, ResourceKind, ResourcePresence, ResourceProvider, ResourceState, ResourceSummary, BackupRun, ExerciseKind, ExerciseOutcome, PolicyStatus, Protection, Readiness, RecoveryExercise, RecoveryExerciseInput, RecoveryPlan,
   RecoveryPlanInput, RunKind, RunOutcome,
   Alert, AlertClass, AlertComponent, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
@@ -494,4 +494,20 @@ export const drApi = (api: ApiClient) => ({
     api.get<RecoveryExercise[]>(`${DR}/exercise/retrieve`, { planId: filter.planId, kind: filter.kind, outcome: filter.outcome, limit: String(limit) }),
   report: (body: RecoveryExerciseInput) => api.post<RecoveryExercise>(`${DR}/exercise/initiate`, body),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${DR}/${id}/audit-log/retrieve`),
+});
+
+const PROCUREMENT = '/it-procurement/v1';
+
+export const procurementApi = (api: ApiClient) => ({
+  list: (filter: { status?: OrderStatus; currency?: CostCurrency; fulfilment?: OrderFulfilment; late?: boolean }) =>
+    api.get<PurchaseOrder[]>(`${PROCUREMENT}/retrieve`, { status: filter.status, currency: filter.currency, fulfilment: filter.fulfilment, late: filter.late ? 'true' : undefined }),
+  retrieve: (id: string) => api.get<PurchaseOrder>(`${PROCUREMENT}/${id}/retrieve`),
+  create: (body: PurchaseOrderInput) => api.post<PurchaseOrder>(`${PROCUREMENT}/initiate`, body),
+  submit: (id: string) => api.put(`${PROCUREMENT}/${id}/control/submit`),
+  decide: (id: string, approverId: string, outcome: 'APPROVE' | 'REJECT') => api.put<PurchaseOrder>(`${PROCUREMENT}/${id}/approval/capture`, { approverId, outcome }),
+  place: (id: string) => api.put(`${PROCUREMENT}/${id}/control/place`),
+  cancel: (id: string) => api.put(`${PROCUREMENT}/${id}/control/cancel`),
+  receive: (id: string, body: { lineNo: number; deliveryRef: string; quantity: number }) => api.post<OrderReceipt>(`${PROCUREMENT}/${id}/receipt/initiate`, body),
+  receipts: (id: string) => api.get<OrderReceipt[]>(`${PROCUREMENT}/${id}/receipt/retrieve`),
+  auditLog: (id: string) => api.get<AuditEntry[]>(`${PROCUREMENT}/${id}/audit-log/retrieve`),
 });
