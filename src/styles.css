@@ -89,12 +89,22 @@ a:visited { color: var(--link-visited); }
   background: var(--nav-bg); color: var(--nav-text);
 }
 .brand { font-weight: 400; color: var(--nav-text); }
-.topbar nav { display: flex; gap: 0.25rem; flex: 1; flex-wrap: wrap; }
-.topbar nav a { color: var(--nav-muted); text-decoration: none; padding: 0.7rem 0.75rem; border-bottom: 3px solid transparent; }
+/* About 25 links: kept compact so they take two or three rows on a laptop, not half the screen. */
+.topbar { gap: 1rem; }
+.topbar nav { display: flex; gap: 0; flex: 1; flex-wrap: wrap; min-width: 0; padding: 0.15rem 0; }
+.topbar nav a { color: var(--nav-muted); text-decoration: none; padding: 0.45rem 0.5rem; font-size: 0.875rem; border-bottom: 3px solid transparent; }
 .topbar nav a:visited { color: var(--nav-muted); }
 .topbar nav a:hover { color: var(--nav-text); }
 .topbar nav a.active { color: var(--nav-text); border-bottom-color: var(--brand); }
-.who { display: flex; gap: 0.75rem; align-items: center; color: var(--nav-muted); }
+.who { display: flex; gap: 0.75rem; align-items: center; color: var(--nav-muted); flex-shrink: 0; }
+@media (max-width: 700px) {
+  /* Brand and user on one row, the links on their own row that scrolls sideways under a thumb. */
+  .topbar { flex-wrap: wrap; gap: 0 1rem; padding-top: 0.4rem; }
+  .brand { flex: 1; }
+  .topbar nav { order: 3; flex: 1 0 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; }
+  .topbar nav a { white-space: nowrap; }
+}
+.who > span { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .who button.link { color: var(--nav-text); }
 
 .productband { background: var(--band-bg); color: var(--band-text); padding: 0 16px; }
@@ -129,7 +139,9 @@ button.link:hover:not(:disabled) { background: none; text-decoration: underline;
 .inline-field input[type='number'] { width: 4.5rem; }
 
 .split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; align-items: start; }
-@media (min-width: 900px) { .split:has(.detail) { grid-template-columns: minmax(0, 1fr) 340px; } }
+@media (min-width: 1100px) { .split:has(.detail) { grid-template-columns: minmax(0, 1fr) 340px; } }
+/* A wide table or line list scrolls inside its own box instead of pushing the whole page sideways. */
+.split > * { min-width: 0; overflow-x: auto; }
 
 table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
 th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
