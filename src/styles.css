@@ -144,6 +144,8 @@ button.link:hover:not(:disabled) { background: none; text-decoration: underline;
 .split > * { min-width: 0; overflow-x: auto; }
 
 table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
+/* On a phone a table is wider than the screen: it scrolls inside its own box, not the page. */
+@media (max-width: 700px) { table { display: block; max-width: 100%; overflow-x: auto; } }
 th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
 th { font-size: 0.85rem; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--border-strong); }
 tr.selected td { background: color-mix(in srgb, var(--accent) 12%, transparent); }
