@@ -19,7 +19,7 @@ const SSO_ERRORS: Record<string, string> = {
 const SSO_ERROR_FALLBACK = 'The identity provider could not confirm your sign-in.';
 
 export function LoginPage() {
-  const { api, signIn } = useSession();
+  const { api, signIn, expired } = useSession();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const ssoError = params.get('sso_error');
@@ -105,6 +105,7 @@ export function LoginPage() {
           </>
         )}
 
+        {expired && <div className="banner banner-error" role="alert">Your session has ended: the platform no longer accepts your access token. Sign in again.</div>}
         {ssoError && <div className="banner banner-error" role="alert">{SSO_ERRORS[ssoError] ?? SSO_ERROR_FALLBACK}<code className="code">{ssoError}</code></div>}
         <ProblemBanner error={error} />
         <button type="submit" className="primary" disabled={!ready || busy}>

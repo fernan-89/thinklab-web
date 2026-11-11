@@ -44,6 +44,9 @@ export function buildUrl(baseUrl: string, path: string, query?: Query): string {
 }
 
 export class ApiClient {
+  /** Called when the platform refuses an access token this client sent (401): the token has expired or was revoked. */
+  onUnauthorized?: () => void;
+
   constructor(
     private readonly getSession: () => Session | null,
     private readonly baseUrl = '/api',
@@ -77,6 +80,7 @@ export class ApiClient {
     }
 
     const response = await this.fetchImpl(buildUrl(this.baseUrl, path, options.query), { method, headers, body });
+    if (response.status === 401 && headers.Authorization) this.onUnauthorized?.();
     if (!response.ok) throw await toProblem(response);
     if (response.status === 204) return undefined as T;
     const text = await response.text();

@@ -31,6 +31,8 @@ interface SessionContextValue {
   session: Session | null;
   /** True while a reloaded federated session is getting its access token back from the cookie. */
   restoring: boolean;
+  /** True when the last session ended because the platform refused its access token (expired or revoked); cleared by the next sign-in. */
+  expired: boolean;
   api: ApiClient;
   signIn: (session: Session) => void;
   signOut: () => void;
@@ -40,6 +42,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children, client }: { children: ReactNode; client?: (get: () => Session | null) => ApiClient }) {
   const [session, setSession] = useState<Session | null>(load);
+  const [expired, setExpired] = useState(false);
   const [restoring, setRestoring] = useState(() => {
     const stored = load();
     return stored?.sso === true && !stored.accessToken;
@@ -53,6 +56,7 @@ export function SessionProvider({ children, client }: { children: ReactNode; cli
     store(next);
     setSession(next);
     setRestoring(false);
+    setExpired(false);
   }, []);
   const signOut = useCallback(() => {
     const federated = sessionRef.current?.sso === true;
@@ -92,7 +96,19 @@ export function SessionProvider({ children, client }: { children: ReactNode; cli
     return () => clearTimeout(timer);
   }, [session, api, adopt, dropped]);
 
-  const value = useMemo(() => ({ session, restoring, api, signIn, signOut }), [session, restoring, api, signIn, signOut]);
+  // A password sign-in has no refresh token: when the platform refuses its access token the person signs in again, with a notice saying why.
+  // (A federated session renews itself from the cookie, above.)
+  useEffect(() => {
+    api.onUnauthorized = () => {
+      const current = sessionRef.current;
+      if (!current?.accessToken || current.sso) return;
+      store(null);
+      setSession(null);
+      setExpired(true);
+    };
+  }, [api]);
+
+  const value = useMemo(() => ({ session, restoring, expired, api, signIn, signOut }), [session, restoring, expired, api, signIn, signOut]);
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
