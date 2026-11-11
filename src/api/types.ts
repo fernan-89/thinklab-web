@@ -1254,6 +1254,26 @@ export interface PurchaseOrder {
   updatedAt: string;
 }
 
+/** An approval band (procurement ADR-036): in this currency, from this amount up, an order is sent for approval against this policy. */
+export interface ApprovalBand {
+  id: string;
+  organisationId: string;
+  currency: CostCurrency;
+  fromAmount: number;
+  policyId: string;
+  status: 'ACTIVE' | 'RETIRED';
+  createdAt: string;
+  createdBy: string;
+  retiredAt?: string;
+  retiredBy?: string;
+}
+
+export interface ApprovalBandInput {
+  currency: CostCurrency;
+  fromAmount: number;
+  policyId: string;
+}
+
 export interface OrderLineInput {
   category: LineCategory;
   item: string;

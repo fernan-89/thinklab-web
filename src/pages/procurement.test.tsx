@@ -21,12 +21,19 @@ const order = (over: Record<string, unknown> = {}) => ({
 const trail = [{ occurredAt: '2026-10-01T10:00:00Z', action: 'INITIATED', executor: 'x', toStatus: 'DRAFT', detail: 'Drafted with 2 line(s) in BRL.' }];
 const receipts = [{ lineNo: 1, deliveryRef: 'DN-100', quantity: 4, receivedAt: '2026-10-05T10:00:00Z', reportedBy: 'dock-1' }];
 
-function server(orders: Record<string, unknown>[] = [order()], extra: Handler = () => undefined, receiptList: unknown[] = []) {
+const band = (over: Record<string, unknown> = {}) => ({
+  id: 'b1', organisationId: ORG, currency: 'BRL', fromAmount: 0, policyId: 'p-0001', status: 'ACTIVE', createdAt: '2026-11-11T10:00:00Z', createdBy: 'admin', ...over,
+});
+
+function server(orders: Record<string, unknown>[] = [order()], extra: Handler = () => undefined, receiptList: unknown[] = [], bandList: unknown[] = [band()]) {
   const handler: Handler = (r) => {
     const custom = extra(r);
     if (custom) return custom;
     const path = r.url.pathname;
     if (path.endsWith('/audit-log/retrieve')) return { body: trail };
+    if (r.method === 'GET' && path.endsWith('/band/retrieve')) return { body: bandList };
+    if (r.method === 'POST' && path.endsWith('/band/initiate')) return { status: 201, body: band({ id: 'b2' }) };
+    if (r.method === 'PUT' && path.endsWith('/control/retire')) return { status: 204 };
     if (path.endsWith('/receipt/retrieve')) return { body: receiptList };
     if (r.method === 'POST' && path.endsWith('/receipt/initiate')) return { status: 201, body: receipts[0] };
     if (r.method === 'POST' && path.endsWith('/initiate')) return { status: 201, body: order({ id: 'o2', reference: (r.body as { reference: string }).reference }) };
@@ -277,5 +284,78 @@ describe('the menu', () => {
 
     expect(await screen.findByRole('heading', { name: 'Procurement' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Procurement' })).toBeInTheDocument();
+  });
+});
+
+describe('the approval bands', () => {
+  it('lists the active bands with their currency, starting amount, policy and who made them', async () => {
+    const { impl } = fakeFetch(server([order()], () => undefined, [], [band(), band({ id: 'b3', currency: 'USD', fromAmount: 10000, policyId: 'p-0002', createdBy: 'boss' })]));
+    renderWithSession(<ProcurementPage />, impl, me);
+
+    const table = within(await screen.findByRole('table', { name: 'Bands' }));
+    const brl = table.getByText('0.00 BRL').closest('tr') as HTMLElement;
+    expect(within(brl).getByText('p-0001')).toBeInTheDocument();
+    expect(within(brl).getByText('admin')).toBeInTheDocument();
+    const usd = table.getByText('10000.00 USD').closest('tr') as HTMLElement;
+    expect(within(usd).getByText('p-0002')).toBeInTheDocument();
+    expect(screen.queryByText(/No approval band yet/)).not.toBeInTheDocument();
+  });
+
+  it('says an order cannot be sent for approval while there is no band', async () => {
+    const { impl } = fakeFetch(server([order()], () => undefined, [], []));
+    renderWithSession(<ProcurementPage />, impl, me);
+
+    expect(await screen.findByText(/No approval band yet/)).toBeInTheDocument();
+    expect(screen.queryByRole('table', { name: 'Bands' })).not.toBeInTheDocument();
+  });
+
+  it('makes a band with the currency, the amount as a number and the policy, then reads the bands again', async () => {
+    const { impl, calls } = fakeFetch(server([order()], () => undefined, [], []));
+    renderWithSession(<ProcurementPage />, impl, me);
+    const user = userEvent.setup();
+    const form = within(await screen.findByRole('form', { name: 'New band' }));
+
+    expect(form.getByRole('button', { name: 'Make band' })).toBeDisabled();
+    await user.selectOptions(form.getByLabelText('Band currency'), 'USD');
+    await user.clear(form.getByLabelText('From amount'));
+    await user.type(form.getByLabelText('From amount'), '2500.50');
+    await user.type(form.getByLabelText('Approval policy (id)'), ' p-77 ');
+    await user.click(form.getByRole('button', { name: 'Make band' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'POST' && c.url.pathname.endsWith('/band/initiate'))).toBe(true));
+    const made = calls.find((c) => c.method === 'POST' && c.url.pathname.endsWith('/band/initiate'))!;
+    expect(made.body).toEqual({ currency: 'USD', fromAmount: 2500.5, policyId: 'p-77' });
+    await waitFor(() => expect(calls.filter((c) => c.method === 'GET' && c.url.pathname.endsWith('/band/retrieve')).length).toBeGreaterThan(1));
+  });
+
+  it('shows the answer when a band is refused (a second band at the same amount)', async () => {
+    const { impl } = fakeFetch(server([order()], (r) => (r.method === 'POST' && r.url.pathname.endsWith('/band/initiate')
+      ? { status: 409, body: { title: 'Conflict', detail: 'An active BRL approval band that starts at 0.00 already exists in this organisation.', error_code: 'ERR-PRC-00409' } } : undefined)));
+    renderWithSession(<ProcurementPage />, impl, me);
+    const user = userEvent.setup();
+    const form = within(await screen.findByRole('form', { name: 'New band' }));
+
+    await user.type(form.getByLabelText('Approval policy (id)'), 'p-1');
+    await user.click(form.getByRole('button', { name: 'Make band' }));
+
+    expect(await screen.findByText(/already exists in this organisation/)).toBeInTheDocument();
+  });
+
+  it('retires a band and reads the bands again', async () => {
+    const { impl, calls } = fakeFetch(server());
+    renderWithSession(<ProcurementPage />, impl, me);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Retire BRL from 0.00' }));
+
+    await waitFor(() => expect(calls.some((c) => c.method === 'PUT' && c.url.pathname.endsWith('/band/b1/control/retire'))).toBe(true));
+    await waitFor(() => expect(calls.filter((c) => c.method === 'GET' && c.url.pathname.endsWith('/band/retrieve')).length).toBeGreaterThan(1));
+  });
+
+  it('shows why when the bands cannot be read', async () => {
+    const { impl } = fakeFetch(server([order()], (r) => (r.url.pathname.endsWith('/band/retrieve') ? { status: 500, body: { title: 'Internal Server Error', detail: 'boom' } } : undefined)));
+    renderWithSession(<ProcurementPage />, impl, me);
+
+    expect(await screen.findByText(/boom/)).toBeInTheDocument();
   });
 });

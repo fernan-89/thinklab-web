@@ -10,7 +10,7 @@ import type {
   CapacityForecast, CapacityLevel, CapacityMetric, CapacityPolicy, CapacityPolicyInput, CapacitySample,
   BackupPolicy, BackupPolicyInput, OrderFulfilment, OrderReceipt, OrderStatus, PurchaseOrder, PurchaseOrderInput, CloudResource, ResourceKind, ResourcePresence, ResourceProvider, ResourceState, ResourceSummary, BackupRun, ExerciseKind, ExerciseOutcome, PolicyStatus, Protection, Readiness, RecoveryExercise, RecoveryExerciseInput, RecoveryPlan,
   RecoveryPlanInput, RunKind, RunOutcome,
-  Alert, AlertClass, AlertComponent, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
+  Alert, AlertClass, ApprovalBand, ApprovalBandInput, AlertComponent, AlertRule, AlertRuleInput, AlertStatus, Evaluation, MaintenanceWindow, MaintenanceWindowInput,
   Connection, ConnectionCheck, ConnectionProvider, LinkStatus, LinkSubjectType, TicketLink,
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
@@ -510,4 +510,7 @@ export const procurementApi = (api: ApiClient) => ({
   receive: (id: string, body: { lineNo: number; deliveryRef: string; quantity: number }) => api.post<OrderReceipt>(`${PROCUREMENT}/${id}/receipt/initiate`, body),
   receipts: (id: string) => api.get<OrderReceipt[]>(`${PROCUREMENT}/${id}/receipt/retrieve`),
   auditLog: (id: string) => api.get<AuditEntry[]>(`${PROCUREMENT}/${id}/audit-log/retrieve`),
+  bands: () => api.get<ApprovalBand[]>(`${PROCUREMENT}/band/retrieve`),
+  createBand: (body: ApprovalBandInput) => api.post<ApprovalBand>(`${PROCUREMENT}/band/initiate`, body),
+  retireBand: (id: string) => api.put(`${PROCUREMENT}/band/${id}/control/retire`),
 });
