@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { procurementApi } from '../api/services';
 import {
   COST_CURRENCIES, LINE_CATEGORIES, ORDER_FULFILMENTS, ORDER_STATUSES,
-  type AuditEntry, type CostCurrency, type LineCategory, type OrderFulfilment, type OrderReceipt, type OrderStatus, type PurchaseOrder,
+  type ApprovalBand, type AuditEntry, type CostCurrency, type LineCategory, type OrderFulfilment, type OrderReceipt, type OrderStatus, type PurchaseOrder,
 } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
@@ -53,6 +53,7 @@ export function ProcurementPage() {
         ))}
       </div>
       <ProblemBanner error={everything.error} />
+      <ApprovalBands />
       {creating && <NewOrderForm onCancel={() => setCreating(false)} onCreated={(order) => { setCreating(false); setSelectedId(order.id); reloadAll(); }} />}
       <div className="filters">
         <select aria-label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}>
@@ -90,6 +91,70 @@ export function ProcurementPage() {
         )}
         {selectedId && <OrderDetail key={selectedId} id={selectedId} onClose={() => setSelectedId(undefined)} onChanged={reloadAll} />}
       </div>
+    </section>
+  );
+}
+
+/**
+ * The approval bands (procurement ADR-036): in a currency, from an amount up, an order is sent for approval against a policy. The band of an order is the one with
+ * the greatest lower bound not above its total; with none, an order cannot be sent for approval.
+ */
+function ApprovalBands() {
+  const { api } = useSession();
+  const bands = useAsync(() => procurementApi(api).bands(), []);
+  const [currency, setCurrency] = useState<CostCurrency>('BRL');
+  const [fromAmount, setFromAmount] = useState('0');
+  const [policyId, setPolicyId] = useState('');
+  const [error, setError] = useState<Error>();
+  const [busy, setBusy] = useState(false);
+  const ready = fromAmount.trim() !== '' && policyId.trim() !== '';
+
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      await action();
+    } catch (failure) {
+      setError(toError(failure));
+    } finally {
+      setBusy(false);
+      bands.reload();
+    }
+  }
+
+  return (
+    <section className="card" aria-label="Approval bands">
+      <h2>Approval bands</h2>
+      <p className="muted">From this amount up, in this currency, an order is sent for approval against this policy. An order uses the band with the greatest starting amount that is not above its total.</p>
+      <ProblemBanner error={bands.error} />
+      {bands.data?.length === 0 && !bands.loading && (
+        <div className="banner" role="status">No approval band yet: an order cannot be sent for approval until there is one. Make a band from 0 for each currency you buy in.</div>
+      )}
+      {bands.data && bands.data.length > 0 && (
+        <table aria-label="Bands">
+          <thead><tr><th>Currency</th><th>From</th><th>Policy</th><th>Made by</th><th /></tr></thead>
+          <tbody>
+            {bands.data.map((band: ApprovalBand) => (
+              <tr key={band.id}>
+                <td>{band.currency}</td>
+                <td>{money(band.fromAmount, band.currency)}</td>
+                <td className="code">{band.policyId}</td>
+                <td>{band.createdBy}</td>
+                <td><button type="button" disabled={busy} onClick={() => void run(() => procurementApi(api).retireBand(band.id))}>{`Retire ${band.currency} from ${band.fromAmount.toFixed(2)}`}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <form className="form" aria-label="New band" onSubmit={(e) => { e.preventDefault(); if (ready) void run(() => procurementApi(api).createBand({ currency, fromAmount: Number(fromAmount), policyId: policyId.trim() })); }}>
+        <label>Band currency
+          <select value={currency} onChange={(e) => setCurrency(e.target.value as CostCurrency)}>{COST_CURRENCIES.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+        </label>
+        <label>From amount<input inputMode="decimal" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} /></label>
+        <label>Approval policy (id)<input value={policyId} onChange={(e) => setPolicyId(e.target.value)} /></label>
+        <ProblemBanner error={error} />
+        <div className="actions"><button type="submit" className="primary" disabled={!ready || busy}>Make band</button></div>
+      </form>
     </section>
   );
 }
