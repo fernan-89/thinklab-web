@@ -21,3 +21,26 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  # nginx cannot be run on every developer machine, and the Docker healthcheck of the web container depends on /healthz: this loads the real config in the
+  # same nginx image as the Dockerfile, checks that it is valid and that /healthz answers ok while the single-page fallback still works.
+  nginx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: nginx.conf is valid and /healthz answers
+        timeout-minutes: 4
+        run: |
+          conf="$PWD/nginx.conf"
+          # the config forwards /api to a host called gateway, and nginx will not load without it resolving
+          timeout -k 5 120 docker run --rm --add-host gateway:127.0.0.1 -v "$conf":/etc/nginx/conf.d/default.conf:ro nginx:1.27-alpine nginx -t
+          docker run -d --name web-test --add-host gateway:127.0.0.1 -p 8081:80 -v "$conf":/etc/nginx/conf.d/default.conf:ro nginx:1.27-alpine >/dev/null
+          for i in 1 2 3 4 5 6 7 8 9 10; do curl -fs http://127.0.0.1:8081/healthz >/dev/null && break; sleep 1; done
+          body=$(curl -fsS http://127.0.0.1:8081/healthz || true)
+          echo "GET /healthz -> '$body'"
+          spa=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8081/some/client/route)
+          echo "GET /some/client/route -> $spa (single-page fallback)"
+          docker rm -f web-test >/dev/null 2>&1 || true
+          if [ "$body" != "ok" ]; then echo "::error::/healthz did not answer ok"; exit 1; fi
+          if [ "$spa" != "200" ]; then echo "::error::the single-page fallback no longer answers 200"; exit 1; fi
