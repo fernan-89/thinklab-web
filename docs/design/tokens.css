@@ -1,0 +1,73 @@
+/* ThinkLab design tokens (generated from tokens.json; Material-style roles, solid colours). Dark is the default. */
+:root {
+  --tl-background: #111111;
+  --tl-surface: #1B1B1B;
+  --tl-surface-high: #262626;
+  --tl-on-surface: #F3F3F3;
+  --tl-on-surface-variant: #A8A8A8;
+  --tl-outline: #3A3A3A;
+  --tl-primary: #FF7A4D;
+  --tl-on-primary: #1A0A04;
+  --tl-primary-container: #7A2A12;
+  --tl-on-primary-container: #FFDBD0;
+  --tl-secondary: #5AA7FF;
+  --tl-on-secondary: #001B3D;
+  --tl-tertiary: #3DD6B5;
+  --tl-error: #FF6B5E;
+  --tl-nub: #E2231A;
+  --tl-warning: #F0B24A;
+  --tl-secondary-container: #16202D;
+  --tl-nav-bar: #000000;
+  --tl-seed-brand: #E95420;
+  --tl-seed-nub: #E2231A;
+  --tl-seed-blue: #0B64DD;
+  --tl-seed-teal: #16B79A;
+  --tl-seed-pink: #F04E98;
+  --tl-seed-yellow: #FEC514;
+  --tl-seed-navy: #101C3F;
+  --tl-font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --tl-font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  --tl-font-display: 'Barlow Condensed', 'IBM Plex Sans', sans-serif;
+}
+:root[data-theme='light'] {
+  --tl-background: #FAFAFA;
+  --tl-surface: #FFFFFF;
+  --tl-surface-high: #EFEFEF;
+  --tl-on-surface: #1B1B1B;
+  --tl-on-surface-variant: #5F5F5F;
+  --tl-outline: #D0D0D0;
+  --tl-primary: #D84315;
+  --tl-on-primary: #FFFFFF;
+  --tl-primary-container: #FFDBD0;
+  --tl-on-primary-container: #3B0D00;
+  --tl-secondary: #0B64DD;
+  --tl-on-secondary: #FFFFFF;
+  --tl-tertiary: #0E8F78;
+  --tl-error: #B3261E;
+  --tl-nub: #E2231A;
+  --tl-warning: #8A5300;
+  --tl-secondary-container: #EAF2FB;
+  --tl-nav-bar: #111111;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --tl-background: #FAFAFA;
+    --tl-surface: #FFFFFF;
+    --tl-surface-high: #EFEFEF;
+    --tl-on-surface: #1B1B1B;
+    --tl-on-surface-variant: #5F5F5F;
+    --tl-outline: #D0D0D0;
+    --tl-primary: #D84315;
+    --tl-on-primary: #FFFFFF;
+    --tl-primary-container: #FFDBD0;
+    --tl-on-primary-container: #3B0D00;
+    --tl-secondary: #0B64DD;
+    --tl-on-secondary: #FFFFFF;
+    --tl-tertiary: #0E8F78;
+    --tl-error: #B3261E;
+    --tl-nub: #E2231A;
+    --tl-warning: #8A5300;
+    --tl-secondary-container: #EAF2FB;
+    --tl-nav-bar: #111111;
+  }
+}

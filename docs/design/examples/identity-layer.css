@@ -1,0 +1,67 @@
+/* ThinkLab identity layer (appended to the base style by Build-Docs.ps1)
+   - granular halftone background, numbered sections, corner marks, code panels, side rail
+   - IBM-era laptop heritage: matte black, the red TrackPoint nub as the accent dot, IBM Plex type, THINK tag, key-cap tiles */
+:root{--dots:rgba(255,255,255,.075);--nub:#e2231a;--mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,Menlo,monospace;--glow:rgba(233,84,32,.16)}
+:root[data-theme=light]{--dots:rgba(16,28,63,.10);--glow:rgba(233,84,32,.10)}
+
+/* granular background: two offset dot grids + a soft brand glow at the top */
+body{background-image:radial-gradient(ellipse 70% 320px at 50% 0,var(--glow),transparent 70%),radial-gradient(circle at 1px 1px,var(--dots) 1.1px,transparent 1.5px),radial-gradient(circle at 1px 1px,var(--dots) .7px,transparent 1.1px);background-size:auto,16px 16px,32px 32px;background-position:0 0,0 0,8px 8px;background-attachment:fixed,fixed,fixed}
+
+/* type */
+body,.side a,.note,.card,table{font-family:'IBM Plex Sans','Ubuntu Sans',Ubuntu,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+main h1,.global span:first-child{font-family:var(--mono);letter-spacing:-.02em}
+.lead{font-family:'IBM Plex Sans',system-ui,sans-serif}
+main h1{font-weight:600}
+
+/* sections numbered like the Kong pages: "01/ Title" in a ruled bar */
+main{counter-reset:sec}
+main h2{counter-increment:sec;font:600 .95rem/1.2 var(--mono);letter-spacing:.01em;border:1px solid var(--border);background:var(--surface);padding:.75rem 1rem;margin:2.4rem 0 1.1rem;position:relative}
+main h2:before{content:counter(sec,decimal-leading-zero) "/ ";color:var(--brand)}
+main h2:after{content:"";position:absolute;right:12px;top:50%;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:var(--nub)}
+
+/* panels with "+" crosshair corners */
+.card,.note,.code,figure.fig{position:relative}
+.card:before,.card:after,.code:before,.code:after{content:"+";position:absolute;font:12px/1 var(--mono);color:var(--muted);opacity:.8}
+.card:before,.code:before{left:-6px;top:-8px}.card:after,.code:after{right:-6px;bottom:-8px}
+.card{border-top:3px solid var(--nub)}
+
+/* brand mark carries the red nub; header band with fine scan-lines; THINK tag */
+.mark{position:relative}.mark:after{content:"";position:absolute;right:-5px;bottom:-5px;width:9px;height:9px;border-radius:50%;background:var(--nub);box-shadow:0 0 0 2px var(--band)}
+.band{background-image:repeating-linear-gradient(180deg,rgba(255,255,255,.035) 0 2px,transparent 2px 6px)}
+.global .in:before{content:"THINK";font:700 .72rem/1 var(--mono);letter-spacing:.35em;color:#fff;border:1px solid rgba(255,255,255,.35);padding:.35rem .5rem .35rem .75rem;margin-right:.6rem}
+.side a.on{border-left-color:var(--nub)}
+
+/* code panel (real excerpts of the kit configuration) */
+.code{background:#14161c;border:1px solid var(--border);margin:1.4rem 0;color:#e8ecf5}
+:root[data-theme=light] .code{background:#101828}
+.code .fn{font:600 .78rem/1 var(--mono);padding:.7rem 1rem;border-bottom:1px solid #2a2f3c;color:#a8b0c4;letter-spacing:.04em}
+.code .fn b{color:#fff}
+.code ol{counter-reset:l;list-style:none;margin:0;padding:.7rem 0;overflow-x:auto;font:13px/1.65 var(--mono)}
+.code li{counter-increment:l;white-space:pre;padding-right:1rem}
+.code li:before{content:counter(l);display:inline-block;width:3.2rem;padding-right:1.2rem;text-align:right;color:#6b7390}
+.code .k{color:#e8ecf5}.code .s{color:#ffb089}.code .n{color:#7ee2b8}.code .p{color:#6b7390}
+
+/* vertical rail (language / theme), like the HUMAN | AGENT selector */
+.rail{position:fixed;left:10px;top:42%;z-index:6;display:flex;flex-direction:column;align-items:center;gap:.5rem;padding:.6rem .35rem;border:1px solid var(--border);background:var(--surface);border-radius:20px;font:700 .64rem/1 var(--mono);letter-spacing:.3em}
+.rail a,.rail button{writing-mode:vertical-rl;color:var(--muted);background:none;border:0;cursor:pointer;font:inherit;letter-spacing:inherit;padding:.2rem 0}
+.rail a.on,.rail button.on{color:var(--text)}.rail i{width:8px;height:8px;border-radius:50%;background:var(--nub)}
+@media (max-width:1180px){.rail{display:none}}
+
+svg.iso .dot{fill:#e2231a}
+
+/* embedded fonts (OFL, copied to assets/fonts by Build-Docs.ps1): the manual looks the same offline */
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(fonts/IBMPlexSans-400.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(fonts/IBMPlexSans-600.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;src:url(fonts/IBMPlexMono-Regular.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'IBM Plex Mono';font-weight:600;src:url(fonts/IBMPlexMono-SemiBold.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(fonts/BarlowCondensed-SemiBold.ttf) format('truetype');font-display:swap}
+.brand{font-family:'Barlow Condensed','IBM Plex Sans',sans-serif!important;font-weight:600;font-size:2.5rem!important;letter-spacing:.005em}
+code,.mono{font-family:var(--mono)}
+.side h4{font:600 .7rem/1 var(--mono);letter-spacing:.16em;text-transform:uppercase}
+
+/* status pill (footer): the kit carries its own integrity manifest */
+.pill{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--border);border-radius:999px;padding:.3rem .8rem;margin-left:.8rem;font:600 .72rem/1 var(--mono);letter-spacing:.06em;color:var(--text);background:var(--surface);white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.rail button{font-size:.9rem;letter-spacing:0;writing-mode:horizontal-tb}
+
+@media print{.global,.band,.search,.side,.pager,.rail{display:none!important}.wrap{display:block}body{background:#fff!important;color:#000}main h2{break-after:avoid}figure.fig,.tablewrap,.code{break-inside:avoid}}
