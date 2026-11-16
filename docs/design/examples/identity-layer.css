@@ -13,7 +13,7 @@ main h1,.global span:first-child{font-family:var(--mono);letter-spacing:-.02em}
 .lead{font-family:'IBM Plex Sans',system-ui,sans-serif}
 main h1{font-weight:600}
 
-/* sections numbered like the Kong pages: "01/ Title" in a ruled bar */
+/* sections numbered "01/ Title" in a ruled bar */
 main{counter-reset:sec}
 main h2{counter-increment:sec;font:600 .95rem/1.2 var(--mono);letter-spacing:.01em;border:1px solid var(--border);background:var(--surface);padding:.75rem 1rem;margin:2.4rem 0 1.1rem;position:relative}
 main h2:before{content:counter(sec,decimal-leading-zero) "/ ";color:var(--brand)}
