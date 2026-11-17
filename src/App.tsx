@@ -25,6 +25,7 @@ import { LoginPage } from './pages/Login';
 import { SsoCompletePage } from './pages/SsoComplete';
 import { AuditPage } from './pages/Audit';
 import { PlanPage } from './pages/Plan';
+import { QuickInstallPage } from './pages/QuickInstall';
 import { StockPage } from './pages/Stock';
 import { TopologyPage } from './pages/Topology';
 
@@ -59,6 +60,7 @@ export function App() {
         <Route path="/topology" element={<TopologyPage />} />
         <Route path="/audit" element={<AuditPage />} />
         <Route path="/plan" element={<PlanPage />} />
+        <Route path="/quick-install" element={<QuickInstallPage />} />
         <Route path="/stock" element={<StockPage />} />
       </Route>
       <Route path="*" element={<Navigate to={session ? '/assets' : '/login'} replace />} />
