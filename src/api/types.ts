@@ -31,8 +31,8 @@ export interface AuditEntry {
   detail?: string;
 }
 
-export type DiscoveredItemStatus = 'DISCOVERED' | 'UNDER_REVIEW' | 'PROMOTED' | 'IGNORED';
-export const DISCOVERED_ITEM_STATUSES: DiscoveredItemStatus[] = ['DISCOVERED', 'UNDER_REVIEW', 'PROMOTED', 'IGNORED'];
+export type DiscoveredItemStatus = 'DISCOVERED' | 'UNDER_REVIEW' | 'PROMOTING' | 'PROMOTED' | 'IGNORED';
+export const DISCOVERED_ITEM_STATUSES: DiscoveredItemStatus[] = ['DISCOVERED', 'UNDER_REVIEW', 'PROMOTING', 'PROMOTED', 'IGNORED'];
 
 export interface DiscoveredItem {
   id: string;
