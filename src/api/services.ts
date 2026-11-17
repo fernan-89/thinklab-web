@@ -15,6 +15,7 @@ import type {
   ApprovalPolicy, ApprovalRequest, ApprovalStage, ApprovalStatus, CatalogField, CatalogItem, CatalogItemStatus, Incident, IncidentImpact, IncidentPriority, IncidentStatus, Article, ArticleStatus, ArticleVisibility, Plan, PlanStatus, Problem, ProblemPriority, ProblemStatus, RequestStatus, ServiceRequest, Subscription,
   StockEntry, StockItem, StockStatus,
   TopologyEdge, TopologyNode, TraversalDirection,
+  InstallKit, InstallKitFamily, InstallKitStatus, InstallOutcome, InstallReport, StickDefinition,
 } from './types';
 
 const ASSETS = '/it-asset-registry/v1';
@@ -434,6 +435,14 @@ export const vendorApi = (api: ApiClient) => ({
   updateAgreement: (id: string, body: AgreementUpdate) => api.put(`${VENDOR}/agreement/${id}/update`, body),
   controlAgreement: (id: string, action: 'pause' | 'resume') => api.put(`${VENDOR}/agreement/${id}/control/${action}`),
   agreementAuditLog: (id: string) => api.get<AuditEntry[]>(`${VENDOR}/agreement/${id}/audit-log/retrieve`),
+});
+
+const INSTALL_KIT = '/it-install-kit/v1';
+
+export const installKitApi = (api: ApiClient) => ({
+  kits: (filter: { status?: InstallKitStatus; family?: InstallKitFamily } = {}) => api.get<InstallKit[]>(`${INSTALL_KIT}/retrieve`, { status: filter.status, family: filter.family }),
+  reports: (filter: { kitId?: string; outcome?: InstallOutcome } = {}) => api.get<InstallReport[]>(`${INSTALL_KIT}/install-report/retrieve`, { kitId: filter.kitId, outcome: filter.outcome }),
+  stickDefinition: () => api.get<StickDefinition>(`${INSTALL_KIT}/stick-definition/retrieve`),
 });
 
 const LICENSE = '/it-license-registry/v1';
