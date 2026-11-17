@@ -167,7 +167,7 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 
 .badge { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 2px; font-size: 0.75rem; font-weight: 500; border: 1px solid var(--border-strong); text-transform: uppercase; letter-spacing: 0.03em; }
 .badge-ready, .badge-deployed, .badge-promoted, .badge-active, .badge-approved { color: var(--ok); border-color: var(--ok); }
-.badge-maintenance, .badge-under_review, .badge-discovered, .badge-past_due, .badge-trialing, .badge-pending { color: var(--warn); border-color: var(--warn); }
+.badge-maintenance, .badge-under_review, .badge-promoting, .badge-discovered, .badge-past_due, .badge-trialing, .badge-pending { color: var(--warn); border-color: var(--warn); }
 .badge-suspended, .badge-cancelled, .badge-rejected { color: var(--danger-text); border-color: var(--danger-text); }
 .badge-decommissioned, .badge-ignored, .badge-retired, .badge-discontinued { color: var(--muted); }
 
