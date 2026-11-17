@@ -9,7 +9,7 @@ platform gateway and covers three jobs.
 | **Discovery** | Review queue: claim a discovered item, set its category, ignore it, or promote it into a real asset. A refused promotion shows the schema violations the registry returned. | `it-discovery` (and `ci-type-catalog` through the registry) |
 | **Topology** | The dependency graph drawn left to right (dependents on the left), and a **blast radius** for any node: pick a node, a direction (upstream = what a failure there would hit) and a hop limit, and the reached nodes light up by distance. | `it-topology-graph` |
 
-The **Quick Install** screen (`/quick-install`) is the web face of the add-on [thinklab-quickinstall](https://github.com/fernan-89/thinklab-quickinstall), an unattended Ventoy install stick: it lists the systems, languages and editions the stick can install, its rules and its known limits. It reads a bundled, sanitised catalog (`src/quickinstall/kits.ts`) and calls no service; keep that file in step with the add-on's `config/catalog.json` when the add-on changes.
+The **Quick Install** screen (`/quick-install`) is the web face of the add-on [thinklab-quickinstall](https://github.com/fernan-89/thinklab-quickinstall), an unattended Ventoy install stick: it lists the systems, languages and editions the stick can install, its rules and its known limits. It shows a bundled, sanitised catalog of what the stick can install (`src/quickinstall/kits.ts`) and, from the `it-install-kit` service, the kits, the stick definition and the install reports of the organisation; keep that file in step with the add-on's `config/catalog.json` when the add-on changes.
 
 ## Sign-in
 

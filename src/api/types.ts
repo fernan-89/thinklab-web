@@ -1297,3 +1297,45 @@ export interface OrderReceipt {
   receivedAt: string;
   reportedBy: string;
 }
+
+// ---- Quick Install (it-install-kit): install kits, install reports and the stick definition. No machine, no secret.
+export const INSTALL_KIT_FAMILIES = ['WINDOWS', 'LINUX', 'RECOVERY'] as const;
+export type InstallKitFamily = (typeof INSTALL_KIT_FAMILIES)[number];
+export type InstallKitRole = 'WORKSTATION' | 'SERVER' | 'TOOL';
+export type InstallKitStatus = 'ACTIVE' | 'RETIRED';
+export type InstallOutcome = 'SUCCEEDED' | 'PARTIAL' | 'FAILED';
+
+export interface InstallKit {
+  id: string;
+  organisationId: string;
+  name: string;
+  family: InstallKitFamily;
+  role: InstallKitRole;
+  language: 'EN' | 'PT';
+  systemId: string;
+  machineClass: string;
+  revision: number;
+  status: InstallKitStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InstallReport {
+  id: string;
+  organisationId: string;
+  kitId: string;
+  kitRevision: number;
+  addOnVersion: string;
+  outcome: InstallOutcome;
+  warnings: number;
+  assetId?: string;
+  occurredAt: string;
+  createdAt: string;
+  reportedBy: string;
+}
+
+export interface StickDefinition {
+  organisationId: string;
+  kitCount: number;
+  systems: { systemId: string; family: InstallKitFamily; role: InstallKitRole; kits: { kitId: string; name: string; language: 'EN' | 'PT'; machineClass: string; revision: number }[] }[];
+}
