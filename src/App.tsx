@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSession } from './auth/session';
 import { Layout } from './components/Layout';
+import { Rail } from './components/Rail';
 import { AssetsPage } from './pages/Assets';
 import { ApprovalsPage } from './pages/Approvals';
 import { DiscoveryPage } from './pages/Discovery';
@@ -33,37 +34,40 @@ export function App() {
   const { session, restoring } = useSession();
   if (restoring) return <p className="muted" style={{ padding: '2rem' }}>Restoring your session...</p>;
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/sso/complete" element={<SsoCompletePage />} />
-      <Route element={session ? <Layout /> : <Navigate to="/login" replace />}>
-        <Route path="/assets" element={<AssetsPage />} />
-        <Route path="/approvals" element={<ApprovalsPage />} />
-        <Route path="/integrations" element={<IntegrationsPage />} />
-        <Route path="/health" element={<HealthPage />} />
-        <Route path="/alerts" element={<AlertsPage />} />
-        <Route path="/backups" element={<BackupsPage />} />
-        <Route path="/recovery" element={<RecoveryPage />} />
-        <Route path="/patches" element={<PatchesPage />} />
-        <Route path="/capacity" element={<CapacityPage />} />
-        <Route path="/vendors" element={<VendorsPage />} />
-        <Route path="/licenses" element={<LicensesPage />} />
-        <Route path="/procurement" element={<ProcurementPage />} />
-        <Route path="/network" element={<NetworkPage />} />
-        <Route path="/cloud-costs" element={<CloudCostsPage />} />
-        <Route path="/cloud-inventory" element={<CloudInventoryPage />} />
-        <Route path="/incidents" element={<IncidentsPage />} />
-        <Route path="/knowledge" element={<KnowledgePage />} />
-        <Route path="/problems" element={<ProblemsPage />} />
-        <Route path="/requests" element={<ServiceRequestsPage />} />
-        <Route path="/discovery" element={<DiscoveryPage />} />
-        <Route path="/topology" element={<TopologyPage />} />
-        <Route path="/audit" element={<AuditPage />} />
-        <Route path="/plan" element={<PlanPage />} />
-        <Route path="/quick-install" element={<QuickInstallPage />} />
-        <Route path="/stock" element={<StockPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to={session ? '/assets' : '/login'} replace />} />
-    </Routes>
+    <>
+      <Rail />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/sso/complete" element={<SsoCompletePage />} />
+        <Route element={session ? <Layout /> : <Navigate to="/login" replace />}>
+          <Route path="/assets" element={<AssetsPage />} />
+          <Route path="/approvals" element={<ApprovalsPage />} />
+          <Route path="/integrations" element={<IntegrationsPage />} />
+          <Route path="/health" element={<HealthPage />} />
+          <Route path="/alerts" element={<AlertsPage />} />
+          <Route path="/backups" element={<BackupsPage />} />
+          <Route path="/recovery" element={<RecoveryPage />} />
+          <Route path="/patches" element={<PatchesPage />} />
+          <Route path="/capacity" element={<CapacityPage />} />
+          <Route path="/vendors" element={<VendorsPage />} />
+          <Route path="/licenses" element={<LicensesPage />} />
+          <Route path="/procurement" element={<ProcurementPage />} />
+          <Route path="/network" element={<NetworkPage />} />
+          <Route path="/cloud-costs" element={<CloudCostsPage />} />
+          <Route path="/cloud-inventory" element={<CloudInventoryPage />} />
+          <Route path="/incidents" element={<IncidentsPage />} />
+          <Route path="/knowledge" element={<KnowledgePage />} />
+          <Route path="/problems" element={<ProblemsPage />} />
+          <Route path="/requests" element={<ServiceRequestsPage />} />
+          <Route path="/discovery" element={<DiscoveryPage />} />
+          <Route path="/topology" element={<TopologyPage />} />
+          <Route path="/audit" element={<AuditPage />} />
+          <Route path="/plan" element={<PlanPage />} />
+          <Route path="/quick-install" element={<QuickInstallPage />} />
+          <Route path="/stock" element={<StockPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to={session ? '/assets' : '/login'} replace />} />
+      </Routes>
+    </>
   );
 }
