@@ -1,83 +1,76 @@
 /*
- * ThinkLab look: the Canonical / Vanilla design language the product is aiming at - a near-black navigation bar over a charcoal
- * product band, a light grey page, square controls with a bottom-border field, green for the main action, blue links and the
- * Ubuntu orange only as the brand mark. Every colour is a token below; the dark scheme redefines the same tokens.
+ * ThinkLab look, from the design pack (docs/design): matte black and paper white, one red dot, brand orange for the main action, IBM Plex type.
+ * The palette is the role tokens of tokens.css (--tl-*), dark by default and light when the system asks for it or data-theme="light";
+ * the names below are the ones this file uses. The impact colours of the topology graph keep their own values per scheme for now.
  */
 :root {
-  --nav-bg: #111111;
+  --nav-bg: var(--tl-nav-bar);
   --nav-text: #ffffff;
   --nav-muted: #c7c7c7;
-  --band-bg: #262626;
+  --band-bg: color-mix(in srgb, var(--tl-nav-bar) 88%, #ffffff);
   --band-text: #ffffff;
-  --brand: #e95420;
+  --brand: var(--tl-seed-brand);
+  --nub: var(--tl-nub);
 
-  --bg: #f3f3f3;
-  --surface: #ffffff;
-  --field: #e9e9e9;
-  --text: #111111;
-  --muted: #666666;
-  --border: #d0d0d0;
-  --border-strong: #666666;
+  --bg: var(--tl-background);
+  --surface: var(--tl-surface);
+  --field: var(--tl-surface-high);
+  --text: var(--tl-on-surface);
+  --muted: var(--tl-on-surface-variant);
+  --border: var(--tl-outline);
+  --border-strong: var(--tl-on-surface-variant);
 
-  --link: #0066cc;
-  --link-visited: #7e3d9a;
-  --accent: #0066cc;
-  --positive: #0e8420;
-  --positive-hover: #0b6a1a;
-  --on-positive: #ffffff;
+  --link: var(--tl-secondary);
+  --link-visited: color-mix(in srgb, var(--tl-secondary) 55%, var(--tl-seed-pink));
+  --accent: var(--tl-secondary);
+  /* The light primary and teal of the pack read 4.4:1 and 4.0:1 on white; a touch of the text colour takes them past 4.5:1 for small text. */
+  --action: color-mix(in srgb, var(--tl-primary) 92%, var(--tl-on-surface));
+  --action-hover: color-mix(in srgb, var(--tl-primary) 80%, var(--tl-on-surface));
+  --on-action: var(--tl-on-primary);
+  --positive: var(--tl-tertiary);
 
-  --danger-bg: #fbe3e5;
-  --danger-text: #a3121f;
-  --ok: #0e8420;
-  --warn: #8a5300;
+  --danger-bg: color-mix(in srgb, var(--tl-error) 14%, var(--tl-surface));
+  --danger-text: var(--tl-error);
+  --ok: color-mix(in srgb, var(--tl-tertiary) 80%, var(--tl-on-surface));
+  --warn: var(--tl-warning);
+  --impact-1: #8e3a2e;
+  --impact-2: #8a5a1c;
+  --impact-3: #6f6420;
+  --edge: #6b7589;
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
   --impact-1: #f4b4a8;
   --impact-2: #f7d19a;
   --impact-3: #f1e6a6;
   --edge: #8a94a6;
-  color-scheme: light dark;
 }
+:root[data-theme='dark'] { color-scheme: dark; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --nav-bg: #000000;
-    --band-bg: #1e1e1e;
-    --bg: #111111;
-    --surface: #1d1d1d;
-    --field: #2b2b2b;
-    --text: #f3f3f3;
-    --muted: #a8a8a8;
-    --border: #3a3a3a;
-    --border-strong: #8c8c8c;
-    --link: #5aa7ff;
-    --link-visited: #c08be0;
-    --accent: #5aa7ff;
-    --positive: #1a9a2e;
-    --positive-hover: #22b238;
-    --danger-bg: #3a1c1f;
-    --danger-text: #ffb4b4;
-    --ok: #4fd067;
-    --warn: #f0b24a;
-    --impact-1: #8e3a2e;
-    --impact-2: #8a5a1c;
-    --impact-3: #6f6420;
-    --edge: #6b7589;
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --impact-1: #f4b4a8;
+    --impact-2: #f7d19a;
+    --impact-3: #f1e6a6;
+    --edge: #8a94a6;
   }
 }
-
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font: 16px/1.5 'Ubuntu Sans', Ubuntu, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font: 16px/1.5 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-weight: 400;
 }
 
-h1 { font-size: 2rem; font-weight: 300; line-height: 1.2; margin: 0 0 0.5rem; }
-h2 { font-size: 1.25rem; font-weight: 400; margin: 0; }
+h1 { font: 600 1.75rem/1.2 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
+h2 { font-size: 1.25rem; font-weight: 600; margin: 0; }
 h3 { font-size: 1rem; font-weight: 500; margin: 1rem 0 0.4rem; }
-code, .code { font: 0.85em ui-monospace, SFMono-Regular, Menlo, monospace; }
+code, .code { font: 0.85em 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
 a { color: var(--link); }
 a:visited { color: var(--link-visited); }
 .muted { color: var(--muted); }
@@ -88,7 +81,7 @@ a:visited { color: var(--link-visited); }
   display: flex; align-items: center; gap: 2rem; padding: 0 16px; min-height: 46px;
   background: var(--nav-bg); color: var(--nav-text);
 }
-.brand { font-weight: 400; color: var(--nav-text); }
+.brand { font-family: 'Barlow Condensed', 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 1.5rem; letter-spacing: 0.005em; color: var(--nav-text); }
 /* About 25 links: kept compact so they take two or three rows on a laptop, not half the screen. */
 .topbar { gap: 1rem; }
 .topbar nav { display: flex; gap: 0; flex: 1; flex-wrap: wrap; min-width: 0; padding: 0.15rem 0; }
@@ -111,7 +104,7 @@ a:visited { color: var(--link-visited); }
 .productband-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 0.5rem; min-height: 52px; }
 .logo { display: inline-grid; place-items: center; width: 30px; height: 30px; background: var(--brand); border-radius: 2px; }
 .logo::before { content: ''; width: 14px; height: 14px; border: 3px solid #fff; border-radius: 50%; }
-.product { font-size: 1.35rem; font-weight: 300; }
+.product { font: 600 1rem 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: 0.04em; text-transform: uppercase; }
 
 .shell main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 16px 3rem; }
 
@@ -127,8 +120,8 @@ input[type='checkbox'] { padding: 0; accent-color: var(--positive); }
 button { cursor: pointer; font-weight: 400; }
 button:hover:not(:disabled) { background: color-mix(in srgb, var(--text) 8%, transparent); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.primary { background: var(--positive); border-color: var(--positive); color: var(--on-positive); }
-button.primary:hover:not(:disabled) { background: var(--positive-hover); border-color: var(--positive-hover); }
+button.primary { background: var(--action); border-color: var(--action); color: var(--on-action); }
+button.primary:hover:not(:disabled) { background: var(--action-hover); border-color: var(--action-hover); }
 button.link { background: none; border: none; padding: 0; color: var(--link); text-align: left; }
 button.link:hover:not(:disabled) { background: none; text-decoration: underline; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
