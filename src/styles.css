@@ -158,7 +158,9 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; }
 .card { background: var(--surface); border: 1px solid var(--border); padding: 1rem; }
 
-.badge { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 2px; font-size: 0.75rem; font-weight: 500; border: 1px solid var(--border-strong); text-transform: uppercase; letter-spacing: 0.03em; }
+/* The status pill of the design pack: a rounded outline, a dot in the status colour and a short mono label. The colour classes below set the text and border; the dot follows the text. */
+.badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.05rem 0.65rem 0.05rem 0.5rem; border-radius: 999px; font: 600 0.7rem/1.5 'IBM Plex Mono', ui-monospace, monospace; border: 1px solid var(--border-strong); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.badge::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .badge-ready, .badge-deployed, .badge-promoted, .badge-active, .badge-approved { color: var(--ok); border-color: var(--ok); }
 .badge-maintenance, .badge-under_review, .badge-promoting, .badge-discovered, .badge-past_due, .badge-trialing, .badge-pending { color: var(--warn); border-color: var(--warn); }
 .badge-suspended, .badge-cancelled, .badge-rejected { color: var(--danger-text); border-color: var(--danger-text); }
