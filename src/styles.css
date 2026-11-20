@@ -329,3 +329,16 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
   .rail button { writing-mode: horizontal-tb; padding: 0 0.1rem; letter-spacing: 0.15em; }
   .rail button.on::after { margin-top: 0.25rem; }
 }
+
+/* Numbered section bars of the design pack: "01/ Title" in a ruled bar with the red dot at the right edge. Only the sections that sit loose on the page are numbered; titles
+   inside a card, a form or a detail panel stay plain, so the numbers follow the order of the screen. */
+main { counter-reset: sec; }
+main h2:not(:is(.card, .detail, .form, aside, form) h2) {
+  counter-increment: sec; position: relative; margin: 2rem 0 1rem; padding: 0.75rem 2.2rem 0.75rem 1rem;
+  border: 1px solid var(--border); background: var(--surface);
+  font: 600 0.95rem/1.2 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: 0.01em;
+}
+main h2:not(:is(.card, .detail, .form, aside, form) h2)::before { content: counter(sec, decimal-leading-zero) '/ '; color: var(--brand); }
+main h2:not(:is(.card, .detail, .form, aside, form) h2)::after {
+  content: ''; position: absolute; right: 12px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--nub);
+}
