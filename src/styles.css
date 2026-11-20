@@ -175,7 +175,16 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .empty { color: var(--muted); padding: 1rem 0; }
 .field-error { color: var(--danger-text); margin: 0.2rem 0 0; font-size: 0.85rem; }
 
-.login { min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--bg); }
+/* The granular background of the design pack, only on the entry screen: two offset dot grids that fade away from the top, and a soft brand glow. The dots take the text colour, so they suit both schemes. */
+.login {
+  min-height: 100vh; display: grid; place-items: center; padding: 16px; background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 320px at 50% 0, color-mix(in srgb, var(--brand) 14%, transparent), transparent 70%),
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--text) 9%, transparent) 1.1px, transparent 1.5px),
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--text) 9%, transparent) 0.7px, transparent 1.1px);
+  background-size: auto, 16px 16px, 32px 32px;
+  background-position: 0 0, 0 0, 8px 8px;
+}
 .login .card { width: min(420px, 100%); display: grid; gap: 0.75rem; border-top: 4px solid var(--brand); }
 .login label { display: grid; gap: 0.25rem; font-size: 0.9rem; }
 .login input { width: 100%; }
@@ -328,4 +337,17 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
   .rail { left: auto; right: 10px; top: auto; bottom: 10px; flex-direction: row; padding: 0.35rem 0.7rem; }
   .rail button { writing-mode: horizontal-tb; padding: 0 0.1rem; letter-spacing: 0.15em; }
   .rail button.on::after { margin-top: 0.25rem; }
+}
+
+/* Numbered section bars of the design pack: "01/ Title" in a ruled bar with the red dot at the right edge. Only the sections that sit loose on the page are numbered; titles
+   inside a card, a form or a detail panel stay plain, so the numbers follow the order of the screen. */
+main { counter-reset: sec; }
+main h2:not(:is(.card, .detail, .form, aside, form) h2) {
+  counter-increment: sec; position: relative; margin: 2rem 0 1rem; padding: 0.75rem 2.2rem 0.75rem 1rem;
+  border: 1px solid var(--border); background: var(--surface);
+  font: 600 0.95rem/1.2 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: 0.01em;
+}
+main h2:not(:is(.card, .detail, .form, aside, form) h2)::before { content: counter(sec, decimal-leading-zero) '/ '; color: var(--brand); }
+main h2:not(:is(.card, .detail, .form, aside, form) h2)::after {
+  content: ''; position: absolute; right: 12px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--nub);
 }
