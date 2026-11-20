@@ -1,7 +1,7 @@
 /*
  * ThinkLab look, from the design pack (docs/design): matte black and paper white, one red dot, brand orange for the main action, IBM Plex type.
  * The palette is the role tokens of tokens.css (--tl-*), dark by default and light when the system asks for it or data-theme="light";
- * the names below are the ones this file uses. The impact colours of the topology graph keep their own values per scheme for now.
+ * the names below are the ones this file uses. The impact colours of the topology graph are the pack's red, orange and yellow seeds mixed into the surface.
  */
 :root {
   --nav-bg: var(--tl-nav-bar);
@@ -33,27 +33,28 @@
   --danger-text: var(--tl-error);
   --ok: color-mix(in srgb, var(--tl-tertiary) 80%, var(--tl-on-surface));
   --warn: var(--tl-warning);
-  --impact-1: #8e3a2e;
-  --impact-2: #8a5a1c;
-  --impact-3: #6f6420;
+  /* Impact by hops: red, orange and yellow seeds mixed into the surface. Each reads 4.8:1 or more under the text colour, in both schemes. */
+  --impact-1: color-mix(in srgb, var(--tl-seed-nub) 65%, var(--surface));
+  --impact-2: color-mix(in srgb, var(--tl-seed-brand) 65%, var(--surface));
+  --impact-3: color-mix(in srgb, var(--tl-seed-yellow) 45%, var(--surface));
   --edge: #6b7589;
   color-scheme: light dark;
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --impact-1: #f4b4a8;
-  --impact-2: #f7d19a;
-  --impact-3: #f1e6a6;
+  --impact-1: color-mix(in srgb, var(--tl-seed-nub) 65%, var(--surface));
+  --impact-2: color-mix(in srgb, var(--tl-seed-brand) 65%, var(--surface));
+  --impact-3: color-mix(in srgb, var(--tl-seed-yellow) 90%, var(--surface));
   --edge: #8a94a6;
 }
 :root[data-theme='dark'] { color-scheme: dark; }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
-    --impact-1: #f4b4a8;
-    --impact-2: #f7d19a;
-    --impact-3: #f1e6a6;
+    --impact-1: color-mix(in srgb, var(--tl-seed-nub) 65%, var(--surface));
+    --impact-2: color-mix(in srgb, var(--tl-seed-brand) 65%, var(--surface));
+    --impact-3: color-mix(in srgb, var(--tl-seed-yellow) 90%, var(--surface));
     --edge: #8a94a6;
   }
 }
@@ -204,6 +205,8 @@ dl.inline > div { display: flex; gap: 0.4rem; }
 .graph text { fill: var(--text); pointer-events: none; }
 .graph .node-label { font-size: 12px; font-weight: 500; }
 .graph .node-type { font-size: 10px; fill: var(--muted); }
+/* On a coloured node the muted grey reads only 2.2:1 to 4.2:1, so the type label takes the text colour (4.8:1 or more). */
+.graph .node.impact-1 .node-type, .graph .node.impact-2 .node-type, .graph .node.impact-3 .node-type { fill: var(--text); }
 
 .impact-list { margin: 0.5rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
 .hop { display: inline-grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-size: 0.75rem; font-weight: 500; color: var(--text); }
