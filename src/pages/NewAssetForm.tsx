@@ -3,6 +3,7 @@ import { assetApi } from '../api/services';
 import { ASSET_CATEGORIES, type Asset, type AssetCategory } from '../api/types';
 import { useSession } from '../auth/session';
 import { ProblemBanner } from '../components/Feedback';
+import { useI18n } from '../i18n';
 
 interface Row {
   id: number;
@@ -16,6 +17,7 @@ interface Row {
  * (including the list of schema violations) is shown as it comes back.
  */
 export function NewAssetForm({ onCreated, onCancel }: { onCreated: (asset: Asset) => void; onCancel: () => void }) {
+  const { t } = useI18n();
   const { api } = useSession();
   const [name, setName] = useState('');
   const [category, setCategory] = useState<AssetCategory | ''>('');
@@ -51,33 +53,33 @@ export function NewAssetForm({ onCreated, onCancel }: { onCreated: (asset: Asset
   }
 
   return (
-    <form className="card form" aria-label="New asset" onSubmit={submit}>
-      <h2>New asset</h2>
+    <form className="card form" aria-label={t('assetForm.title')} onSubmit={submit}>
+      <h2>{t('assetForm.title')}</h2>
       <label>
-        Name
+        {t('common.name')}
         <input value={name} maxLength={160} onChange={(e) => setName(e.target.value)} />
       </label>
       <label>
-        Category
+        {t('common.category')}
         <select value={category} onChange={(e) => setCategory(e.target.value as AssetCategory | '')}>
-          <option value="">Choose...</option>
+          <option value="">{t('common.choose')}</option>
           {ASSET_CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
       </label>
       <label>
-        Serial number
+        {t('assetForm.serialNumber')}
         <input value={serialNumber} maxLength={120} onChange={(e) => setSerialNumber(e.target.value)} />
       </label>
 
       <fieldset>
-        <legend>Specifications</legend>
+        <legend>{t('assets.specifications')}</legend>
         {rows.map((row) => (
           <div className="spec-row" key={row.id}>
-            <input aria-label="Specification name" placeholder="name (e.g. cpu)" value={row.key} onChange={(e) => updateRow(row.id, { key: e.target.value })} />
-            <input aria-label="Specification value" placeholder="value" value={row.value} onChange={(e) => updateRow(row.id, { value: e.target.value })} />
-            <button type="button" className="link" onClick={() => setRows((current) => current.filter((r) => r.id !== row.id))}>Remove</button>
+            <input aria-label={t('assetForm.specName')} placeholder={t('assetForm.specNamePlaceholder')} value={row.key} onChange={(e) => updateRow(row.id, { key: e.target.value })} />
+            <input aria-label={t('assetForm.specValue')} placeholder={t('assetForm.specValuePlaceholder')} value={row.value} onChange={(e) => updateRow(row.id, { value: e.target.value })} />
+            <button type="button" className="link" onClick={() => setRows((current) => current.filter((r) => r.id !== row.id))}>{t('common.remove')}</button>
           </div>
         ))}
         <button
@@ -87,16 +89,16 @@ export function NewAssetForm({ onCreated, onCancel }: { onCreated: (asset: Asset
             setNextId((id) => id + 1);
           }}
         >
-          Add specification
+          {t('assetForm.addSpec')}
         </button>
-        {duplicateKey && <p className="field-error">Two specifications have the same name.</p>}
-        {emptyKey && <p className="field-error">A specification needs a name.</p>}
+        {duplicateKey && <p className="field-error">{t('assetForm.duplicateSpec')}</p>}
+        {emptyKey && <p className="field-error">{t('assetForm.emptySpecName')}</p>}
       </fieldset>
 
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Registering...' : 'Register asset'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('assetForm.registering') : t('assetForm.register')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );

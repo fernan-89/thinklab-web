@@ -72,6 +72,7 @@ export const statusPt: Record<string, string> = {
   pending: 'pendente',
   pending_approval: 'aguardando aprovação',
   present: 'presente',
+  provisioned: 'provisionado',
   promoted: 'promovido',
   promoting: 'promovendo',
   public: 'público',

@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import * as apiTypes from '../api/types';
+import { ASSET_ACTIONS } from '../api/services';
+import { actionPt } from './actions';
 import { en } from './en';
 import { detectLanguage, fill, hasMessage, LanguageProvider, useI18n } from './index';
 import { pt } from './pt';
@@ -25,6 +28,17 @@ describe('the dictionaries', () => {
     }
   });
 
+  it('give Portuguese to every status value the API enums define', () => {
+    const lists = Object.entries(apiTypes).filter(([name, value]) => name.endsWith('_STATUSES') && Array.isArray(value)) as [string, string[]][];
+    expect(lists.length).toBeGreaterThan(10);
+    const missing = lists.flatMap(([name, values]) => values.filter((value) => !statusPt[value.toLowerCase()]).map((value) => `${name}.${value}`));
+    expect(missing).toEqual([]);
+  });
+
+  it('give Portuguese to the action labels of the areas already translated', () => {
+    const labels = new Set(Object.values(ASSET_ACTIONS).flatMap((actions) => actions.map((action) => action.label)));
+    expect([...labels].filter((label) => !actionPt[label])).toEqual([]);
+  });
   it('give Portuguese to every status the stylesheet colours', () => {
     const css = readFileSync(resolve(process.cwd(), 'src/styles.css'), 'utf8');
     const statuses = new Set([...css.matchAll(/\.badge-([a-z0-9_]+)/g)].map((m) => m[1]));

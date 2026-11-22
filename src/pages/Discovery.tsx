@@ -3,9 +3,11 @@ import { discoveryApi } from '../api/services';
 import { ASSET_CATEGORIES, DISCOVERED_ITEM_STATUSES, type AssetCategory, type DiscoveredItem, type DiscoveredItemStatus } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
+import { useI18n } from '../i18n';
 import { useAsync } from '../useAsync';
 
 export function DiscoveryPage() {
+  const { t, status: statusLabel } = useI18n();
   const { api } = useSession();
   const discovery = discoveryApi(api);
   const [status, setStatus] = useState<DiscoveredItemStatus | ''>('DISCOVERED');
@@ -13,19 +15,19 @@ export function DiscoveryPage() {
 
   return (
     <section>
-      <h1>Discovery</h1>
-      <p className="muted">Items reported by collectors wait here until someone reviews them. Promoting one creates the real asset.</p>
+      <h1>{t('nav.discovery')}</h1>
+      <p className="muted">{t('discovery.intro')}</p>
       <div className="filters">
-        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as DiscoveredItemStatus | '')}>
-          <option value="">All statuses</option>
+        <select aria-label={t('common.status')} value={status} onChange={(e) => setStatus(e.target.value as DiscoveredItemStatus | '')}>
+          <option value="">{t('common.allStatuses')}</option>
           {DISCOVERED_ITEM_STATUSES.map((s) => (
-            <option key={s} value={s}>{s.replace('_', ' ')}</option>
+            <option key={s} value={s}>{statusLabel(s)}</option>
           ))}
         </select>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} items`}</span>
+        <span className="muted">{list.loading ? t('common.loading') : t('discovery.count', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
-      {list.data?.length === 0 && !list.loading && <Empty>Nothing to review.</Empty>}
+      {list.data?.length === 0 && !list.loading && <Empty>{t('discovery.empty')}</Empty>}
       <ul className="cards">
         {list.data?.map((item) => (
           <ItemCard key={item.id} item={item} onChanged={list.reload} />
@@ -36,6 +38,7 @@ export function DiscoveryPage() {
 }
 
 function ItemCard({ item, onChanged }: { item: DiscoveredItem; onChanged: () => void }) {
+  const { t, locale } = useI18n();
   const { api } = useSession();
   const discovery = discoveryApi(api);
   const [category, setCategory] = useState<AssetCategory | ''>(item.suggestedCategory ?? '');
@@ -63,7 +66,7 @@ function ItemCard({ item, onChanged }: { item: DiscoveredItem; onChanged: () => 
         <StatusBadge status={item.status} />
       </div>
       <p className="muted small">
-        {item.source} - <code>{item.externalKey}</code> - last seen {new Date(item.lastSeenAt).toLocaleString()}
+        {item.source} - <code>{item.externalKey}</code> - {t('discovery.lastSeen', { when: new Date(item.lastSeenAt).toLocaleString(locale) })}
       </p>
       {attributes.length > 0 && (
         <dl className="inline">
@@ -72,21 +75,21 @@ function ItemCard({ item, onChanged }: { item: DiscoveredItem; onChanged: () => 
           ))}
         </dl>
       )}
-      {item.promotedAssetId && <p>Promoted to asset <code>{item.promotedAssetId}</code></p>}
+      {item.promotedAssetId && <p>{t('discovery.promotedTo')} <code>{item.promotedAssetId}</code></p>}
       <ProblemBanner error={error} />
 
       {item.status === 'DISCOVERED' && (
         <div className="actions">
-          <button type="button" className="primary" disabled={busy} onClick={() => run(() => discovery.claim(item.id))}>Claim for review</button>
-          <button type="button" disabled={busy} onClick={() => run(() => discovery.ignore(item.id))}>Ignore</button>
+          <button type="button" className="primary" disabled={busy} onClick={() => run(() => discovery.claim(item.id))}>{t('discovery.claim')}</button>
+          <button type="button" disabled={busy} onClick={() => run(() => discovery.ignore(item.id))}>{t('discovery.ignore')}</button>
         </div>
       )}
       {item.status === 'UNDER_REVIEW' && (
         <div className="actions">
           <label className="inline-field">
-            Category
+            {t('common.category')}
             <select value={category} onChange={(e) => setCategory(e.target.value as AssetCategory | '')}>
-              <option value="">Choose...</option>
+              <option value="">{t('common.choose')}</option>
               {ASSET_CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
@@ -97,18 +100,18 @@ function ItemCard({ item, onChanged }: { item: DiscoveredItem; onChanged: () => 
             disabled={busy || category === '' || category === item.suggestedCategory}
             onClick={() => run(() => discovery.reviewUpdate(item.id, { suggestedCategory: category as AssetCategory }))}
           >
-            Save category
+            {t('discovery.saveCategory')}
           </button>
           <button
             type="button"
             className="primary"
             disabled={busy || !item.suggestedCategory}
-            title={item.suggestedCategory ? undefined : 'Save a category first'}
+            title={item.suggestedCategory ? undefined : t('discovery.saveCategoryFirst')}
             onClick={() => run(() => discovery.promote(item.id))}
           >
-            Promote to asset
+            {t('discovery.promote')}
           </button>
-          <button type="button" disabled={busy} onClick={() => run(() => discovery.ignore(item.id))}>Ignore</button>
+          <button type="button" disabled={busy} onClick={() => run(() => discovery.ignore(item.id))}>{t('discovery.ignore')}</button>
         </div>
       )}
     </li>
