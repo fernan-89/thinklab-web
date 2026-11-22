@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { en, type MessageKey } from './en';
 import { actionPt } from './actions';
+import { labelPt } from './labels';
 import { pt } from './pt';
 import { statusPt } from './status';
 
@@ -51,8 +52,12 @@ interface I18n {
   t: (key: MessageKey, params?: Params) => string;
   /** The label of a status pill: Portuguese when known, otherwise the value as the backend sends it with the underscores as spaces. */
   status: (value: string) => string;
+  /** An enum value shown as the API sends it (English) or in Portuguese when known: VENDOR_NO_FIX stays itself in English. */
+  enumValue: (value: string) => string;
   /** The text of an action button: Portuguese when known, otherwise the English label. */
   action: (label: string) => string;
+  /** The text of an option the API types define in English (a class, a source, a strategy): Portuguese when known, otherwise the English text. */
+  label: (text: string) => string;
   /** The locale for dates and numbers: `new Date(x).toLocaleString(locale)`. */
   locale: string;
 }
@@ -67,7 +72,9 @@ function build(language: Language, setLanguage: (language: Language) => void): I
       const plain = value.replace(/_/g, ' ');
       return language === 'pt' ? (statusPt[value.toLowerCase()] ?? plain) : plain;
     },
+    enumValue: (value) => (language === 'pt' ? (statusPt[value.toLowerCase()] ?? value) : value),
     action: (label) => (language === 'pt' ? (actionPt[label] ?? label) : label),
+    label: (text) => (language === 'pt' ? (labelPt[text] ?? text) : text),
     locale: LOCALES[language],
   };
 }

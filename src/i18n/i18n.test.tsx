@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as apiTypes from '../api/types';
+import { labelPt } from './labels';
 import { ARTICLE_ACTIONS, ASSET_ACTIONS, INCIDENT_ACTIONS, PROBLEM_ACTIONS, REQUEST_ACTIONS } from '../api/services';
 import { actionPt } from './actions';
 import { en } from './en';
@@ -35,6 +36,18 @@ describe('the dictionaries', () => {
     expect(missing).toEqual([]);
   });
 
+  it('give Portuguese to every option label and noun of the English tables in api/types', () => {
+    const tables = [apiTypes.RULE_SOURCES, apiTypes.ALERT_CLASSES, apiTypes.ALERT_COMPONENTS, apiTypes.RECOVERY_STRATEGIES, apiTypes.EXERCISE_KINDS] as { label: string; noun?: string }[][];
+    const texts = tables.flatMap((table) => table.flatMap((entry) => (entry.noun ? [entry.label, entry.noun] : [entry.label])));
+    expect(texts.length).toBeGreaterThan(30);
+    expect(texts.filter((text) => !labelPt[text])).toEqual([]);
+  });
+
+  it('give Portuguese to the enum values the selects of the operations screens show', () => {
+    const lists = [apiTypes.HEALTHS, apiTypes.PROTECTIONS, apiTypes.READINESSES, apiTypes.PATCH_COMPLIANCES, apiTypes.CAPACITY_LEVELS, apiTypes.CAPACITY_FORECASTS, apiTypes.CAPACITY_METRICS,
+      apiTypes.SEVERITIES, apiTypes.EXERCISE_OUTCOMES, apiTypes.EXERCISE_FAILURE_REASONS, apiTypes.WAIVER_REASONS] as string[][];
+    expect(lists.flat().filter((value) => !statusPt[value.toLowerCase()])).toEqual([]);
+  });
   it('give Portuguese to the action labels of the areas already translated', () => {
     const tables: Record<string, { action: string; label: string }[]>[] = [ASSET_ACTIONS, INCIDENT_ACTIONS, REQUEST_ACTIONS, PROBLEM_ACTIONS, ARTICLE_ACTIONS];
     const labels = new Set(tables.flatMap((table) => Object.values(table).flatMap((actions) => actions.map((action) => action.label))));
