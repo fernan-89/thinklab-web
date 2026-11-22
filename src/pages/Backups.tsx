@@ -128,7 +128,7 @@ function NewPolicyForm({ onCreated, onCancel }: { onCreated: (policy: BackupPoli
 }
 
 function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
-  const { t, locale } = useI18n();
+  const { t, locale, enumValue, status: statusLabel } = useI18n();
   const { api } = useSession();
   const backups = backupApi(api);
   const detail = useAsync<{ policy: BackupPolicy; runs: BackupRun[]; trail: AuditEntry[] }>(async () => {
@@ -183,8 +183,8 @@ function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
                 {detail.data?.runs.map((entry) => (
                   <tr key={entry.id}>
                     <td>{new Date(entry.startedAt).toLocaleString(locale)}</td>
-                    <td>{entry.kind === 'BACKUP' ? 'backup' : 'restore test'}</td>
-                    <td>{entry.outcome === 'SUCCEEDED' ? 'succeeded' : <span className="field-error">{entry.failureReason}</span>}</td>
+                    <td>{entry.kind === 'BACKUP' ? t('backups.kindBackup') : t('backups.kindRestoreTest')}</td>
+                    <td>{entry.outcome === 'SUCCEEDED' ? statusLabel('succeeded') : <span className="field-error">{entry.failureReason ? enumValue(entry.failureReason) : ''}</span>}</td>
                     <td>{t('common.minutes', { count: entry.durationMinutes })}</td>
                     <td>{entry.reportedBy}</td>
                   </tr>

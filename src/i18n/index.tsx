@@ -16,6 +16,9 @@ const LOCALES: Record<Language, string> = { en: 'en-GB', pt: 'pt-BR' };
 
 type Params = Record<string, string | number>;
 
+/** The 	 function, for helpers outside a component that take it as a parameter. */
+export type Translate = (key: MessageKey, params?: Params) => string;
+
 /** Fills each `{name}` of a message; a name with no value is left as written, so a missing one is visible. */
 export function fill(message: string, params?: Params): string {
   if (!params) return message;

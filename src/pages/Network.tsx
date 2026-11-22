@@ -4,12 +4,14 @@ import { SUBNET_LEVELS, SUBNET_STATUSES, type AuditEntry, type IpAllocation, typ
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
+import { useI18n } from '../i18n';
 
 function toError(failure: unknown): Error {
   return failure instanceof Error ? failure : new Error(String(failure));
 }
 
 export function NetworkPage() {
+  const { t, enumValue, status: statusLabel } = useI18n();
   const { api } = useSession();
   const ipam = ipamApi(api);
   const [levelFilter, setLevelFilter] = useState<SubnetLevel | ''>('');
@@ -25,33 +27,33 @@ export function NetworkPage() {
   return (
     <section>
       <div className="page-head">
-        <h1>Network</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New subnet</button>
+        <h1>{t('nav.network')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('network.newSubnet')}</button>
       </div>
-      <p className="muted">The IPv4 subnets addresses are handed out of, and who holds each address. Two active subnets never overlap and an address is never held twice; how full a subnet is is worked out when you look.</p>
-      <div className="tiles" aria-label="Summary">
-        {([['Full', count('FULL')], ['Nearly full', count('NEAR_FULL')], ['OK', count('OK')], ['Retired', count('RETIRED')], ['Total', everything.data?.length]] as const).map(([label, value]) => (
+      <p className="muted">{t('network.intro')}</p>
+      <div className="tiles" aria-label={t('ops.summary')}>
+        {([['Full', count('FULL')], [t('network.nearlyFull'), count('NEAR_FULL')], ['OK', count('OK')], ['Retired', count('RETIRED')], [t('procurement.total'), everything.data?.length]] as const).map(([label, value]) => (
           <div key={label} className="tile"><span className="n">{value ?? '-'}</span><span className="l">{label}</span></div>
         ))}
       </div>
       <ProblemBanner error={everything.error} />
       {creating && <NewSubnetForm onCancel={() => setCreating(false)} onCreated={(subnet) => { setCreating(false); setSelectedId(subnet.id); reloadAll(); }} />}
       <div className="filters">
-        <select aria-label="Level" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as SubnetLevel | '')}>
-          <option value="">Any level</option>
-          {SUBNET_LEVELS.map((value) => <option key={value} value={value}>{value.replace('_', ' ')}</option>)}
+        <select aria-label={t('ops.level')} value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as SubnetLevel | '')}>
+          <option value="">{t('capacity.anyLevel')}</option>
+          {SUBNET_LEVELS.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <select aria-label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SubnetStatus | '')}>
-          <option value="">Active and retired</option>
-          {SUBNET_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('common.status')} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SubnetStatus | '')}>
+          <option value="">{t('network.activeRetired')}</option>
+          {SUBNET_STATUSES.map((value) => <option key={value} value={value}>{enumValue(value)}</option>)}
         </select>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No subnets match.</Empty> : (
-          <table aria-label="Subnets">
-            <thead><tr><th>Subnet</th><th>Range</th><th>VLAN</th><th>Level</th><th>Used</th><th>Free</th></tr></thead>
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('network.noSubnets')}</Empty> : (
+          <table aria-label={t('network.subnets')}>
+            <thead><tr><th>{t('network.subnet')}</th><th>{t('network.range')}</th><th>VLAN</th><th>{t('ops.level')}</th><th>{t('capacity.used')}</th><th>{t('network.free')}</th></tr></thead>
             <tbody>
               {list.data?.map((subnet) => (
                 <tr key={subnet.id} className={subnet.id === selectedId ? 'selected' : undefined}>
@@ -73,6 +75,7 @@ export function NetworkPage() {
 }
 
 function NewSubnetForm({ onCreated, onCancel }: { onCreated: (subnet: Subnet) => void; onCancel: () => void }) {
+  const { t } = useI18n();
   const { api } = useSession();
   const [name, setName] = useState('');
   const [cidr, setCidr] = useState('');
@@ -97,22 +100,23 @@ function NewSubnetForm({ onCreated, onCancel }: { onCreated: (subnet: Subnet) =>
   }
 
   return (
-    <form className="card form" aria-label="New subnet" onSubmit={submit}>
-      <h2>New subnet</h2>
-      <label>Name<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
-      <label>Range (CIDR, its network address)<input value={cidr} placeholder="10.20.0.0/24" maxLength={18} onChange={(e) => setCidr(e.target.value)} /></label>
-      <label>VLAN (optional)<input inputMode="numeric" value={vlan} onChange={(e) => setVlan(e.target.value)} /></label>
-      <label>Nearly full at (percent used)<input inputMode="numeric" value={warn} onChange={(e) => setWarn(e.target.value)} /></label>
+    <form className="card form" aria-label={t('network.newSubnet')} onSubmit={submit}>
+      <h2>{t('network.newSubnet')}</h2>
+      <label>{t('common.name')}<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
+      <label>{t('network.rangeInput')}<input value={cidr} placeholder="10.20.0.0/24" maxLength={18} onChange={(e) => setCidr(e.target.value)} /></label>
+      <label>{t('network.vlanInput')}<input inputMode="numeric" value={vlan} onChange={(e) => setVlan(e.target.value)} /></label>
+      <label>{t('network.nearlyFullInput')}<input inputMode="numeric" value={warn} onChange={(e) => setWarn(e.target.value)} /></label>
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Create subnet'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : t('network.create')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
 }
 
 function SubnetDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const { t, locale } = useI18n();
   const { api } = useSession();
   const ipam = ipamApi(api);
   const detail = useAsync<{ subnet: Subnet; allocations: IpAllocation[]; trail: AuditEntry[] }>(async () => {
@@ -140,26 +144,26 @@ function SubnetDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
   }
 
   return (
-    <aside className="detail" aria-label="Subnet detail">
+    <aside className="detail" aria-label={t('network.detail')}>
       <div className="detail-head">
-        <h2>{subnet?.name ?? 'Subnet'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{subnet?.name ?? t('network.subnet')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={actionError ?? detail.error} />
       {subnet && (
         <>
           <p><StatusBadge status={subnet.level} /> <StatusBadge status={subnet.status} /></p>
           <dl>
-            <dt>Range</dt><dd><code>{subnet.cidr}</code> ({subnet.network} to {subnet.broadcast}{subnet.vlan ? `, VLAN ${subnet.vlan}` : ''})</dd>
-            <dt>Use</dt><dd>{subnet.used} of {subnet.usable} addresses used, {subnet.free} free{subnet.usedPercent !== undefined ? ` (${subnet.usedPercent.toFixed(1)}%)` : ''}; nearly full at {subnet.warnPercent}%</dd>
+            <dt>{t('network.range')}</dt><dd><code>{subnet.cidr}</code> ({t('network.rangeText', { network: subnet.network, broadcast: subnet.broadcast, vlan: subnet.vlan ? `, VLAN ${subnet.vlan}` : '' })})</dd>
+            <dt>{t('network.use')}</dt><dd>{t('network.useText', { used: subnet.used, usable: subnet.usable, free: subnet.free, percent: subnet.usedPercent !== undefined ? ` (${subnet.usedPercent.toFixed(1)}%)` : '', warn: subnet.warnPercent })}</dd>
           </dl>
-          <div className="actions" aria-label="Actions">
+          <div className="actions" aria-label={t('itsm.actions')}>
             {subnet.status === 'ACTIVE'
-              ? <button type="button" disabled={busy} onClick={() => void run(() => ipam.controlSubnet(id, 'retire'))}>Retire</button>
-              : <button type="button" disabled={busy} onClick={() => void run(() => ipam.controlSubnet(id, 'reactivate'))}>Reactivate</button>}
+              ? <button type="button" disabled={busy} onClick={() => void run(() => ipam.controlSubnet(id, 'retire'))}>{t('network.retire')}</button>
+              : <button type="button" disabled={busy} onClick={() => void run(() => ipam.controlSubnet(id, 'reactivate'))}>{t('network.reactivate')}</button>}
           </div>
           {subnet.status === 'ACTIVE' && (
-            <form className="form" aria-label="Allocate" onSubmit={(event) => {
+            <form className="form" aria-label={t('network.allocate')} onSubmit={(event) => {
               event.preventDefault();
               void run(async () => {
                 await ipam.allocate({ subnetId: id, ip: ip.trim() || undefined, hostname: hostname.trim() || undefined });
@@ -167,33 +171,33 @@ function SubnetDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
                 setHostname('');
               });
             }}>
-              <label>Address (empty: the lowest free one)<input value={ip} maxLength={15} onChange={(e) => setIp(e.target.value)} /></label>
-              <label>Host name (optional)<input value={hostname} maxLength={253} onChange={(e) => setHostname(e.target.value)} /></label>
-              <button type="submit" disabled={busy}>Allocate</button>
+              <label>{t('network.addressInput')}<input value={ip} maxLength={15} onChange={(e) => setIp(e.target.value)} /></label>
+              <label>{t('network.hostInput')}<input value={hostname} maxLength={253} onChange={(e) => setHostname(e.target.value)} /></label>
+              <button type="submit" disabled={busy}>{t('network.allocate')}</button>
             </form>
           )}
-          <h3>Addresses</h3>
-          {detail.data?.allocations.length === 0 ? <Empty>No address handed out yet.</Empty> : (
-            <table aria-label="Addresses">
-              <thead><tr><th>Address</th><th>Host</th><th>Status</th><th /></tr></thead>
+          <h3>{t('network.addresses')}</h3>
+          {detail.data?.allocations.length === 0 ? <Empty>{t('network.noAddresses')}</Empty> : (
+            <table aria-label={t('network.addresses')}>
+              <thead><tr><th>{t('integrations.address')}</th><th>{t('network.host')}</th><th>{t('common.status')}</th><th /></tr></thead>
               <tbody>
                 {detail.data?.allocations.map((allocation) => (
                   <tr key={allocation.id}>
                     <td><code>{allocation.ip}</code></td>
                     <td>{allocation.hostname ?? <span className="muted">-</span>}</td>
                     <td><StatusBadge status={allocation.status} /></td>
-                    <td>{allocation.status === 'ALLOCATED' && <button type="button" disabled={busy} onClick={() => void run(() => ipam.release(allocation.id))}>Release</button>}</td>
+                    <td>{allocation.status === 'ALLOCATED' && <button type="button" disabled={busy} onClick={() => void run(() => ipam.release(allocation.id))}>{t('network.release')}</button>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-          <h3>History</h3>
+          <h3>{t('itsm.history')}</h3>
           <ol className="audit">
             {detail.data?.trail.map((entry) => (
               <li key={`${entry.occurredAt}-${entry.action}`}>
                 <strong>{entry.action}</strong> by {entry.executor}
-                <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
               </li>
             ))}
           </ol>

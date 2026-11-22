@@ -204,7 +204,7 @@ function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
           <dl>
             <dt>{t('capacity.watch')}</dt><dd>{t('capacity.watching', { metric: statusLabel(policy.metric), limit: policy.limit, warn: policy.warnPercent, critical: policy.criticalPercent })}</dd>
             <dt>{t('ops.asset')}</dt><dd><code>{policy.assetId}</code></dd>
-            {policy.lastValue !== undefined && <><dt>{t('capacity.latest')}</dt><dd>{policy.lastValue} ({percent(policy.utilisationPercent)}) at {when(policy.lastMeasuredAt, locale)}{policy.stale ? ', older than twice the expected interval' : ''}</dd></>}
+            {policy.lastValue !== undefined && <><dt>{t('capacity.latest')}</dt><dd>{t('capacity.latestText', { value: policy.lastValue, percent: percent(policy.utilisationPercent) ?? '', when: when(policy.lastMeasuredAt, locale) ?? '' })}{policy.stale ? t('licences.stale') : ''}</dd></>}
             <dt>{t('capacity.trend')}</dt><dd>{t('capacity.trendText', { days: policy.windowDays, runsOut: runsOut(policy, t), around: policy.projectedExhaustionAt ? t('capacity.around', { when: when(policy.projectedExhaustionAt, locale) ?? '' }) : '' })}</dd>
             <dt>{t('capacity.reports')}</dt><dd>{t('capacity.reportsText', { hours: policy.reportEveryHours, days: policy.horizonDays })}</dd>
           </dl>

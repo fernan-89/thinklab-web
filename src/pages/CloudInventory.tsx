@@ -7,10 +7,12 @@ import {
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
+import { useI18n } from '../i18n';
 
-const when = (value?: string) => (value ? new Date(value).toLocaleString() : undefined);
+const when = (value: string | undefined, locale: string) => (value ? new Date(value).toLocaleString(locale) : undefined);
 
 export function CloudInventoryPage() {
+  const { t, locale, enumValue } = useI18n();
   const { api } = useSession();
   const inventory = cloudInventoryApi(api);
   const [providerFilter, setProviderFilter] = useState<ResourceProvider | ''>('');
@@ -30,45 +32,45 @@ export function CloudInventoryPage() {
     ['Gone', summary.data?.byPresence.GONE ?? (summary.data ? 0 : undefined)],
     ['AWS', summary.data?.byProvider.AWS ?? (summary.data ? 0 : undefined)],
     ['Azure', summary.data?.byProvider.AZURE ?? (summary.data ? 0 : undefined)],
-    ['Total', summary.data?.total],
+    [t('procurement.total'), summary.data?.total],
   ];
 
   return (
     <section>
       <div className="page-head">
-        <h1>Cloud inventory</h1>
+        <h1>{t('nav.cloudInventory')}</h1>
       </div>
-      <p className="muted">What the AWS and Azure accounts run, as the discovery tools last reported it. Nobody edits a resource here: the tools say what exists. A resource the tools have not seen for a while is missing; one they said was terminated is gone.</p>
-      <div className="tiles" aria-label="Summary">
+      <p className="muted">{t('cloudinv.intro')}</p>
+      <div className="tiles" aria-label={t('ops.summary')}>
         {tiles.map(([label, value]) => (
           <div key={label} className="tile"><span className="n">{value ?? '-'}</span><span className="l">{label}</span></div>
         ))}
       </div>
       <ProblemBanner error={summary.error} />
       <div className="filters">
-        <select aria-label="Provider" value={providerFilter} onChange={(e) => setProviderFilter(e.target.value as ResourceProvider | '')}>
-          <option value="">Any provider</option>
+        <select aria-label={t('integrations.provider')} value={providerFilter} onChange={(e) => setProviderFilter(e.target.value as ResourceProvider | '')}>
+          <option value="">{t('cloudcosts.anyProvider')}</option>
           {RESOURCE_PROVIDERS.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <select aria-label="Kind" value={kindFilter} onChange={(e) => setKindFilter(e.target.value as ResourceKind | '')}>
-          <option value="">Any kind</option>
-          {RESOURCE_KINDS.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('ops.kind')} value={kindFilter} onChange={(e) => setKindFilter(e.target.value as ResourceKind | '')}>
+          <option value="">{t('vendors.anyKind')}</option>
+          {RESOURCE_KINDS.map((value) => <option key={value} value={value}>{enumValue(value)}</option>)}
         </select>
-        <select aria-label="State" value={stateFilter} onChange={(e) => setStateFilter(e.target.value as ResourceState | '')}>
-          <option value="">Any state</option>
-          {RESOURCE_STATES.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('cloudinv.state')} value={stateFilter} onChange={(e) => setStateFilter(e.target.value as ResourceState | '')}>
+          <option value="">{t('cloudinv.anyState')}</option>
+          {RESOURCE_STATES.map((value) => <option key={value} value={value}>{enumValue(value)}</option>)}
         </select>
-        <select aria-label="Presence" value={presenceFilter} onChange={(e) => setPresenceFilter(e.target.value as ResourcePresence | '')}>
-          <option value="">Any presence</option>
-          {RESOURCE_PRESENCES.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('cloudinv.presence')} value={presenceFilter} onChange={(e) => setPresenceFilter(e.target.value as ResourcePresence | '')}>
+          <option value="">{t('cloudinv.anyPresence')}</option>
+          {RESOURCE_PRESENCES.map((value) => <option key={value} value={value}>{enumValue(value)}</option>)}
         </select>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No resources match.</Empty> : (
-          <table aria-label="Resources">
-            <thead><tr><th>Name</th><th>Provider</th><th>Kind</th><th>Region</th><th>State</th><th>Presence</th><th>Last seen</th></tr></thead>
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('cloudinv.noResources')}</Empty> : (
+          <table aria-label={t('cloudinv.resources')}>
+            <thead><tr><th>{t('common.name')}</th><th>{t('integrations.provider')}</th><th>{t('ops.kind')}</th><th>{t('cloudinv.region')}</th><th>{t('cloudinv.state')}</th><th>{t('cloudinv.presence')}</th><th>{t('cloudinv.lastSeen')}</th></tr></thead>
             <tbody>
               {list.data?.map((resource) => (
                 <tr key={resource.id} className={resource.id === selectedId ? 'selected' : undefined}>
@@ -78,7 +80,7 @@ export function CloudInventoryPage() {
                   <td>{resource.region}</td>
                   <td>{resource.state}</td>
                   <td><StatusBadge status={resource.presence} /></td>
-                  <td>{when(resource.lastSeenAt)}</td>
+                  <td>{when(resource.lastSeenAt, locale)}</td>
                 </tr>
               ))}
             </tbody>
@@ -91,32 +93,33 @@ export function CloudInventoryPage() {
 }
 
 function ResourceDetail({ id, onClose }: { id: string; onClose: () => void }) {
+  const { t, locale } = useI18n();
   const { api } = useSession();
   const detail = useAsync<CloudResource>(() => cloudInventoryApi(api).retrieve(id), [id]);
   const resource = detail.data;
   const tags = resource ? Object.entries(resource.tags) : [];
 
   return (
-    <aside className="detail" aria-label="Resource detail">
+    <aside className="detail" aria-label={t('cloudinv.detail')}>
       <div className="detail-head">
-        <h2>{resource?.name ?? 'Resource'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{resource?.name ?? t('cloudinv.fallback')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={detail.error} />
       {resource && (
         <>
           <p><StatusBadge status={resource.presence} /> <StatusBadge status={resource.state} /></p>
           <dl>
-            <dt>Provider id</dt><dd className="code">{resource.externalId}</dd>
-            <dt>Provider</dt><dd>{resource.provider}, {resource.kind.toLowerCase()}, in {resource.region}</dd>
-            <dt>Account</dt><dd className="code">{resource.accountId}</dd>
-            <dt>First seen</dt><dd>{when(resource.firstSeenAt)}</dd>
-            <dt>Last seen</dt><dd>{when(resource.lastSeenAt)}</dd>
-            <dt>Last changed</dt><dd>{when(resource.updatedAt)}</dd>
+            <dt>{t('cloudinv.providerId')}</dt><dd className="code">{resource.externalId}</dd>
+            <dt>{t('integrations.provider')}</dt><dd>{resource.provider}, {resource.kind.toLowerCase()}, in {resource.region}</dd>
+            <dt>{t('cloudcosts.account')}</dt><dd className="code">{resource.accountId}</dd>
+            <dt>{t('cloudinv.firstSeen')}</dt><dd>{when(resource.firstSeenAt, locale)}</dd>
+            <dt>{t('cloudinv.lastSeen')}</dt><dd>{when(resource.lastSeenAt, locale)}</dd>
+            <dt>{t('cloudinv.lastChanged')}</dt><dd>{when(resource.updatedAt, locale)}</dd>
           </dl>
-          <h3>Tags</h3>
-          {tags.length === 0 ? <Empty>No tags reported.</Empty> : (
-            <dl aria-label="Tags">
+          <h3>{t('cloudinv.tags')}</h3>
+          {tags.length === 0 ? <Empty>{t('cloudinv.noTags')}</Empty> : (
+            <dl aria-label={t('cloudinv.tags')}>
               {tags.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}
             </dl>
           )}
