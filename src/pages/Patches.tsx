@@ -197,7 +197,7 @@ function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
                     <td>{when(finding.dueAt, locale) ?? '-'}{finding.overdue && <span className="field-error"> {t('patches.overdueLower')}</span>}</td>
                     <td>
                       <StatusBadge status={finding.status} />
-                      {finding.status === 'WAIVED' && <div className="muted small">{finding.waiverReason} {t('patches.until', { when: when(finding.waivedUntil, locale) ?? '' })}</div>}
+                      {finding.status === 'WAIVED' && <div className="muted small">{finding.waiverReason ? statusLabel(finding.waiverReason) : ''} {t('patches.until', { when: when(finding.waivedUntil, locale) ?? '' })}</div>}
                     </td>
                     <td>
                       {finding.status === 'PENDING' && <button type="button" className="link" disabled={busy} onClick={() => setWaiving(finding.id)}>{t('patches.waive')}</button>}

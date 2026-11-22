@@ -227,13 +227,13 @@ describe('patches in Portuguese', () => {
     const detail = await screen.findByRole('complementary', { name: 'Detalhe da política' });
     expect(within(detail).getByText('crítico 2 d, alto 7 d, médio 30 d, baixo 90 d depois de anunciado')).toBeInTheDocument();
     expect(within(detail).getByText('3 abertos, 2 vencidos, 1 dispensados')).toBeInTheDocument();
-    expect(within(detail).getByText(/ACCEPTED_RISK até/)).toBeInTheDocument();
+    expect(within(detail).getByText(/risco aceito até/)).toBeInTheDocument();
     expect(within(detail).getByRole('button', { name: 'Retirar dispensa' })).toBeInTheDocument();
     await user.click(within(detail).getByRole('button', { name: 'Dispensar' }));
     const waive = await screen.findByRole('form', { name: 'Dispensar patch' });
     expect(within(waive).getByLabelText('Por quantos dias (de 1 a 365)')).toBeInTheDocument();
     expect(within(waive).getByRole('option', { name: 'risco aceito' })).toBeInTheDocument();
-    expectNoEnglish([/ACCEPTED_RISK/g, /KB\d+/g]);
+    expectNoEnglish([/KB\d+/g]);
   });
 });
 
