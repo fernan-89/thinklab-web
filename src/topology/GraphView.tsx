@@ -1,4 +1,5 @@
 import { NODE_HEIGHT, NODE_WIDTH, type GraphLayout } from './layout';
+import { useI18n } from '../i18n';
 
 interface Props {
   layout: GraphLayout;
@@ -14,8 +15,9 @@ function hopClass(hops: number | undefined): string {
 }
 
 export function GraphView({ layout, selectedId, impact, onSelect }: Props) {
+  const { t } = useI18n();
   return (
-    <svg className="graph" role="img" aria-label="Topology graph" width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`}>
+    <svg className="graph" role="img" aria-label={t('topology.graphAria')} width={layout.width} height={layout.height} viewBox={`0 0 ${layout.width} ${layout.height}`}>
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" className="arrow" />
@@ -44,7 +46,7 @@ export function GraphView({ layout, selectedId, impact, onSelect }: Props) {
             transform={`translate(${x}, ${y})`}
             tabIndex={0}
             role="button"
-            aria-label={`${node.label}, ${node.nodeType}${hops !== undefined ? `, impacted at ${hops} hop${hops === 1 ? '' : 's'}` : ''}`}
+            aria-label={t('topology.nodeAria', { label: node.label, type: node.nodeType }) + (hops !== undefined ? t(hops === 1 ? 'topology.impactedOne' : 'topology.impactedMany', { hops }) : '')}
             onClick={() => onSelect(node.id)}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {

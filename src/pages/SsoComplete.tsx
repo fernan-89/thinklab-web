@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { sessionApi } from '../api/services';
 import { claimsOf } from '../auth/jwt';
 import { useSession } from '../auth/session';
+import { useI18n } from '../i18n';
 
 /**
  * Where the gateway sends the browser after a federated sign-in. The refresh token is already in an HttpOnly cookie the page cannot
@@ -10,6 +11,7 @@ import { useSession } from '../auth/session';
  * refresh token is single-use, and a second attempt with it would look like theft and end the session.
  */
 export function SsoCompletePage() {
+  const { t } = useI18n();
   const { api, signIn } = useSession();
   const navigate = useNavigate();
   const started = useRef(false);
@@ -32,5 +34,5 @@ export function SsoCompletePage() {
     );
   }, [api, signIn, navigate]);
 
-  return <p className="muted" style={{ padding: '2rem' }}>Signing you in...</p>;
+  return <p className="muted" style={{ padding: '2rem' }}>{t('sso.signingIn')}</p>;
 }
