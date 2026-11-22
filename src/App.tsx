@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSession } from './auth/session';
 import { Layout } from './components/Layout';
 import { Rail } from './components/Rail';
+import { useT } from './i18n';
 import { AssetsPage } from './pages/Assets';
 import { ApprovalsPage } from './pages/Approvals';
 import { DiscoveryPage } from './pages/Discovery';
@@ -31,8 +32,9 @@ import { StockPage } from './pages/Stock';
 import { TopologyPage } from './pages/Topology';
 
 export function App() {
+  const t = useT();
   const { session, restoring } = useSession();
-  if (restoring) return <p className="muted" style={{ padding: '2rem' }}>Restoring your session...</p>;
+  if (restoring) return <p className="muted" style={{ padding: '2rem' }}>{t('app.restoring')}</p>;
   return (
     <>
       <Rail />

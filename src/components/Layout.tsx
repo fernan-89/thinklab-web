@@ -1,7 +1,37 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSession } from '../auth/session';
+import type { MessageKey } from '../i18n/en';
+import { useT } from '../i18n';
 
+const NAV: ReadonlyArray<readonly [string, MessageKey]> = [
+  ['/assets', 'nav.assets'],
+  ['/discovery', 'nav.discovery'],
+  ['/incidents', 'nav.incidents'],
+  ['/problems', 'nav.problems'],
+  ['/knowledge', 'nav.knowledge'],
+  ['/requests', 'nav.requests'],
+  ['/integrations', 'nav.integrations'],
+  ['/health', 'nav.health'],
+  ['/alerts', 'nav.alerts'],
+  ['/backups', 'nav.backups'],
+  ['/recovery', 'nav.recovery'],
+  ['/patches', 'nav.patches'],
+  ['/capacity', 'nav.capacity'],
+  ['/vendors', 'nav.vendors'],
+  ['/licenses', 'nav.licenses'],
+  ['/procurement', 'nav.procurement'],
+  ['/network', 'nav.network'],
+  ['/cloud-costs', 'nav.cloudCosts'],
+  ['/cloud-inventory', 'nav.cloudInventory'],
+  ['/approvals', 'nav.approvals'],
+  ['/stock', 'nav.stock'],
+  ['/topology', 'nav.topology'],
+  ['/audit', 'nav.audit'],
+  ['/quick-install', 'nav.quickInstall'],
+  ['/plan', 'nav.plan'],
+];
 export function Layout() {
+  const t = useT();
   const { session, signOut } = useSession();
   const navigate = useNavigate();
 
@@ -9,32 +39,12 @@ export function Layout() {
     <div className="shell">
       <header className="topbar">
         <span className="brand">ThinkLab</span>
-        <nav aria-label="Main">
-          <NavLink to="/assets">Assets</NavLink>
-          <NavLink to="/discovery">Discovery</NavLink>
-          <NavLink to="/incidents">Incidents</NavLink>
-          <NavLink to="/problems">Problems</NavLink>
-          <NavLink to="/knowledge">Knowledge</NavLink>
-          <NavLink to="/requests">Requests</NavLink>
-          <NavLink to="/integrations">Integrations</NavLink>
-          <NavLink to="/health">Health</NavLink>
-          <NavLink to="/alerts">Alerts</NavLink>
-          <NavLink to="/backups">Backups</NavLink>
-          <NavLink to="/recovery">Recovery</NavLink>
-          <NavLink to="/patches">Patches</NavLink>
-          <NavLink to="/capacity">Capacity</NavLink>
-          <NavLink to="/vendors">Vendors</NavLink>
-          <NavLink to="/licenses">Licenses</NavLink>
-          <NavLink to="/procurement">Procurement</NavLink>
-          <NavLink to="/network">Network</NavLink>
-          <NavLink to="/cloud-costs">Cloud costs</NavLink>
-          <NavLink to="/cloud-inventory">Cloud inventory</NavLink>
-          <NavLink to="/approvals">Approvals</NavLink>
-          <NavLink to="/stock">Stock</NavLink>
-          <NavLink to="/topology">Topology</NavLink>
-          <NavLink to="/audit">Audit</NavLink>
-          <NavLink to="/quick-install">Quick Install</NavLink>
-          <NavLink to="/plan">Plan</NavLink>
+        <nav aria-label={t('shell.mainNav')}>
+          {NAV.map(([to, key]) => (
+            <NavLink key={to} to={to}>
+              {t(key)}
+            </NavLink>
+          ))}
         </nav>
         <div className="who">
           <span title={session?.organisationId}>{session?.displayName ?? session?.executor}</span>
@@ -46,14 +56,14 @@ export function Layout() {
               navigate('/login');
             }}
           >
-            Sign out
+            {t('shell.signOut')}
           </button>
         </div>
       </header>
       <div className="productband">
         <div className="productband-inner">
           <span className="logo" aria-hidden="true" />
-          <span className="product">Platform</span>
+          <span className="product">{t('shell.platform')}</span>
         </div>
       </div>
       <main>

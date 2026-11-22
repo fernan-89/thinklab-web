@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { SessionProvider } from './auth/session';
+import { LanguageProvider } from './i18n';
 import { applyTheme, readTheme } from './theme';
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/600.css';
@@ -17,9 +18,11 @@ applyTheme(readTheme());
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <SessionProvider>
-        <App />
-      </SessionProvider>
+      <LanguageProvider>
+        <SessionProvider>
+          <App />
+        </SessionProvider>
+      </LanguageProvider>
     </BrowserRouter>
   </StrictMode>,
 );

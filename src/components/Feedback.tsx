@@ -1,4 +1,5 @@
 import { ProblemError } from '../api/client';
+import { useI18n } from '../i18n';
 
 export function ProblemBanner({ error }: { error: Error | undefined }) {
   if (!error) return null;
@@ -22,7 +23,8 @@ export function ProblemBanner({ error }: { error: Error | undefined }) {
 }
 
 export function StatusBadge({ status }: { status: string }) {
-  return <span className={`badge badge-${status.toLowerCase()}`}>{status.replace(/_/g, ' ')}</span>;
+  const { status: label } = useI18n();
+  return <span className={`badge badge-${status.toLowerCase()}`}>{label(status)}</span>;
 }
 
 export function Empty({ children }: { children: string }) {

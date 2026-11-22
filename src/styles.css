@@ -331,6 +331,7 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
   padding: 0.6rem 0.35rem; border: 1px solid var(--border); background: var(--surface); border-radius: 20px;
   font: 600 0.64rem/1 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: 0.3em;
 }
+.rail-group { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
 .rail button { writing-mode: vertical-rl; background: none; border: 0; border-radius: 0; padding: 0.2rem 0; color: var(--muted); letter-spacing: inherit; font: inherit; }
 .rail button:hover:not(:disabled) { background: none; color: var(--text); }
 .rail button.on { color: var(--text); }
@@ -338,6 +339,7 @@ button.danger { color: var(--danger-text); border-color: var(--danger-text); }
 .rail i { width: 8px; height: 8px; border-radius: 50%; background: var(--nub); }
 @media (max-width: 1320px) {
   .rail { left: auto; right: 10px; top: auto; bottom: 10px; flex-direction: row; padding: 0.35rem 0.7rem; }
+  .rail-group { flex-direction: row; gap: 0.4rem; }
   .rail button { writing-mode: horizontal-tb; padding: 0 0.1rem; letter-spacing: 0.15em; }
   .rail button.on::after { margin-top: 0.25rem; }
 }
