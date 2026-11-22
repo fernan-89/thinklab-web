@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as apiTypes from '../api/types';
-import { ASSET_ACTIONS } from '../api/services';
+import { ARTICLE_ACTIONS, ASSET_ACTIONS, INCIDENT_ACTIONS, PROBLEM_ACTIONS, REQUEST_ACTIONS } from '../api/services';
 import { actionPt } from './actions';
 import { en } from './en';
 import { detectLanguage, fill, hasMessage, LanguageProvider, useI18n } from './index';
@@ -36,7 +36,8 @@ describe('the dictionaries', () => {
   });
 
   it('give Portuguese to the action labels of the areas already translated', () => {
-    const labels = new Set(Object.values(ASSET_ACTIONS).flatMap((actions) => actions.map((action) => action.label)));
+    const tables: Record<string, { action: string; label: string }[]>[] = [ASSET_ACTIONS, INCIDENT_ACTIONS, REQUEST_ACTIONS, PROBLEM_ACTIONS, ARTICLE_ACTIONS];
+    const labels = new Set(tables.flatMap((table) => Object.values(table).flatMap((actions) => actions.map((action) => action.label))));
     expect([...labels].filter((label) => !actionPt[label])).toEqual([]);
   });
   it('give Portuguese to every status the stylesheet colours', () => {

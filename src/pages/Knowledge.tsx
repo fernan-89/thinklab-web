@@ -6,6 +6,7 @@ import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
 import { isId, parseIds } from './Incidents';
+import { useI18n } from '../i18n';
 
 const short = (id: string) => id.slice(0, 8);
 
@@ -19,6 +20,7 @@ export function parseKeywords(text: string): string[] {
 }
 
 export function KnowledgePage() {
+  const { t, locale } = useI18n();
   const { api } = useSession();
   const knowledge = knowledgeApi(api);
   const [q, setQ] = useState('');
@@ -41,10 +43,10 @@ export function KnowledgePage() {
   return (
     <section>
       <div className="page-head">
-        <h1>Knowledge</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New article</button>
+        <h1>{t('nav.knowledge')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('kb.new')}</button>
       </div>
-      <p className="muted">What IT knows, written down. An article is reviewed by somebody other than its author before it is published, and a published one changes only through a new version.</p>
+      <p className="muted">{t('kb.intro')}</p>
       {creating && (
         <ArticleForm
           onCancel={() => setCreating(false)}
@@ -52,24 +54,24 @@ export function KnowledgePage() {
         />
       )}
       <div className="filters">
-        <input type="search" aria-label="Search" placeholder="Search the articles" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as ArticleStatus | '')}>
-          <option value="">All statuses</option>
+        <input type="search" aria-label={t('kb.search')} placeholder={t('kb.searchPlaceholder')} value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label={t('common.status')} value={status} onChange={(e) => setStatus(e.target.value as ArticleStatus | '')}>
+          <option value="">{t('common.allStatuses')}</option>
           {ARTICLE_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <select aria-label="Visibility" value={visibility} onChange={(e) => setVisibility(e.target.value as ArticleVisibility | '')}>
-          <option value="">Any audience</option>
+        <select aria-label={t('kb.visibility')} value={visibility} onChange={(e) => setVisibility(e.target.value as ArticleVisibility | '')}>
+          <option value="">{t('kb.anyAudience')}</option>
           {ARTICLE_VISIBILITIES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <input type="search" aria-label="Keyword" placeholder="Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
-        <input type="search" aria-label="About problem" placeholder="About problem (id)" value={problem} onChange={(e) => setProblem(e.target.value)} />
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <input type="search" aria-label={t('kb.keyword')} placeholder={t('kb.keyword')} value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+        <input type="search" aria-label={t('kb.aboutProblem')} placeholder={t('kb.aboutProblemId')} value={problem} onChange={(e) => setProblem(e.target.value)} />
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No articles match.</Empty> : (
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('kb.empty')}</Empty> : (
           <table>
-            <thead><tr><th>Article</th><th>Status</th><th>Audience</th><th>Version</th><th>Category</th><th>Updated</th></tr></thead>
+            <thead><tr><th>{t('kb.article')}</th><th>{t('common.status')}</th><th>{t('kb.audience')}</th><th>{t('kb.version')}</th><th>{t('common.category')}</th><th>{t('kb.updated')}</th></tr></thead>
             <tbody>
               {list.data?.map((article) => (
                 <tr key={article.id} className={article.id === selectedId ? 'selected' : undefined}>
@@ -78,7 +80,7 @@ export function KnowledgePage() {
                   <td><StatusBadge status={article.visibility} /></td>
                   <td>{article.version}</td>
                   <td>{article.category ?? <span className="muted">-</span>}</td>
-                  <td>{new Date(article.updatedAt).toLocaleString()}</td>
+                  <td>{new Date(article.updatedAt).toLocaleString(locale)}</td>
                 </tr>
               ))}
             </tbody>
@@ -91,6 +93,8 @@ export function KnowledgePage() {
 }
 
 function ArticleForm({ article, onSaved, onCancel }: { article?: Article; onSaved: (article: Article) => void; onCancel: () => void }) {
+  const { t } = useI18n();
+  const notAnId = (bad: string) => t('itsm.notAnId', { id: bad });
   const { api } = useSession();
   const [title, setTitle] = useState(article?.title ?? '');
   const [body, setBody] = useState(article?.body ?? '');
@@ -106,8 +110,8 @@ function ArticleForm({ article, onSaved, onCancel }: { article?: Article; onSave
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const parsedProblems = parseIds(problems);
-    const parsedIncidents = parseIds(incidents);
+    const parsedProblems = parseIds(problems, notAnId);
+    const parsedIncidents = parseIds(incidents, notAnId);
     const failure = parsedProblems.error ?? parsedIncidents.error;
     setLocalError(failure);
     if (!ready || failure || !parsedProblems.ids || !parsedIncidents.ids) return;
@@ -133,25 +137,25 @@ function ArticleForm({ article, onSaved, onCancel }: { article?: Article; onSave
   }
 
   return (
-    <form className="card form" aria-label={article ? 'Edit article' : 'New article'} onSubmit={submit}>
-      <h2>{article ? 'Edit article' : 'New article'}</h2>
-      <label>Title<input value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} /></label>
-      <label>Text (no personal data or credentials)<textarea value={body} maxLength={20000} rows={8} onChange={(e) => setBody(e.target.value)} /></label>
-      <label>Category<input value={category} maxLength={60} onChange={(e) => setCategory(e.target.value)} /></label>
-      <label>Keywords (separate with commas)<input value={keywords} onChange={(e) => setKeywords(e.target.value)} /></label>
-      <label>Who can read it once published
+    <form className="card form" aria-label={article ? t('kb.edit') : t('kb.new')} onSubmit={submit}>
+      <h2>{article ? t('kb.edit') : t('kb.new')}</h2>
+      <label>{t('itsm.title')}<input value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} /></label>
+      <label>{t('kb.text')}<textarea value={body} maxLength={20000} rows={8} onChange={(e) => setBody(e.target.value)} /></label>
+      <label>{t('common.category')}<input value={category} maxLength={60} onChange={(e) => setCategory(e.target.value)} /></label>
+      <label>{t('kb.keywordsInput')}<input value={keywords} onChange={(e) => setKeywords(e.target.value)} /></label>
+      <label>{t('kb.audienceInput')}
         <select value={visibility} onChange={(e) => setVisibility(e.target.value as ArticleVisibility)}>
-          <option value="PUBLIC">PUBLIC (staff and requesters)</option>
-          <option value="INTERNAL">INTERNAL (staff only)</option>
+          <option value="PUBLIC">{t('kb.publicOption')}</option>
+          <option value="INTERNAL">{t('kb.internalOption')}</option>
         </select>
       </label>
-      <label>Problems it relates to (ids, optional)<textarea value={problems} onChange={(e) => setProblems(e.target.value)} /></label>
-      <label>Incidents it relates to (ids, optional)<textarea value={incidents} onChange={(e) => setIncidents(e.target.value)} /></label>
+      <label>{t('kb.relatedProblems')}<textarea value={problems} onChange={(e) => setProblems(e.target.value)} /></label>
+      <label>{t('kb.relatedIncidents')}<textarea value={incidents} onChange={(e) => setIncidents(e.target.value)} /></label>
       {localError && <p className="field-error" role="alert">{localError}</p>}
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Save'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : t('common.save')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
@@ -160,6 +164,7 @@ function ArticleForm({ article, onSaved, onCancel }: { article?: Article; onSave
 type Pending = 'return' | 'edit' | undefined;
 
 function ArticleDetail({ id, onClose, onChanged, onOpen }: { id: string; onClose: () => void; onChanged: () => void; onOpen: (id: string) => void }) {
+  const { t, locale, action: actionLabel } = useI18n();
   const { api } = useSession();
   const knowledge = knowledgeApi(api);
   const detail = useAsync<{ article: Article; versions: Article[] | undefined; trail: AuditEntry[] | undefined }>(async () => {
@@ -209,10 +214,10 @@ function ArticleDetail({ id, onClose, onChanged, onOpen }: { id: string; onClose
   }
 
   return (
-    <aside className="detail" aria-label="Article detail">
+    <aside className="detail" aria-label={t('kb.detail')}>
       <div className="detail-head">
-        <h2>{article?.title ?? 'Article'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{article?.title ?? t('kb.article')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={detail.error ?? actionError} />
       {article && (
@@ -221,39 +226,39 @@ function ArticleDetail({ id, onClose, onChanged, onOpen }: { id: string; onClose
             <StatusBadge status={article.status} /> <StatusBadge status={article.visibility} /> <span className="muted">version {article.version}</span>
           </p>
           {article.status === 'DRAFT' && article.reviewComment && (
-            <div className="banner" role="status"><strong>Sent back for changes:</strong> {article.reviewComment}</div>
+            <div className="banner" role="status"><strong>{t('itsm.sentBack')}</strong> {article.reviewComment}</div>
           )}
           <div className="article-body">{article.body}</div>
           <dl>
-            {article.category && <><dt>Category</dt><dd>{article.category}</dd></>}
-            <dt>Keywords</dt><dd>{article.keywords.length === 0 ? 'none' : article.keywords.join(', ')}</dd>
-            {article.authorId && <><dt>Written by</dt><dd><code>{article.authorId.length > 12 ? short(article.authorId) : article.authorId}</code></dd></>}
-            {article.reviewerId && <><dt>Reviewed by</dt><dd><code>{article.reviewerId.length > 12 ? short(article.reviewerId) : article.reviewerId}</code></dd></>}
-            {article.publishedAt && <><dt>Published</dt><dd>{new Date(article.publishedAt).toLocaleString()}</dd></>}
-            {article.relatedProblemIds && <><dt>Problems</dt><dd>{article.relatedProblemIds.length === 0 ? 'none' : article.relatedProblemIds.map((related) => <code key={related}>{short(related)} </code>)}</dd></>}
-            {article.relatedIncidentIds && <><dt>Incidents</dt><dd>{article.relatedIncidentIds.length === 0 ? 'none' : article.relatedIncidentIds.map((related) => <code key={related}>{short(related)} </code>)}</dd></>}
+            {article.category && <><dt>{t('common.category')}</dt><dd>{article.category}</dd></>}
+            <dt>{t('kb.keywords')}</dt><dd>{article.keywords.length === 0 ? t('itsm.none') : article.keywords.join(', ')}</dd>
+            {article.authorId && <><dt>{t('kb.writtenBy')}</dt><dd><code>{article.authorId.length > 12 ? short(article.authorId) : article.authorId}</code></dd></>}
+            {article.reviewerId && <><dt>{t('kb.reviewedBy')}</dt><dd><code>{article.reviewerId.length > 12 ? short(article.reviewerId) : article.reviewerId}</code></dd></>}
+            {article.publishedAt && <><dt>{t('kb.published')}</dt><dd>{new Date(article.publishedAt).toLocaleString(locale)}</dd></>}
+            {article.relatedProblemIds && <><dt>{t('nav.problems')}</dt><dd>{article.relatedProblemIds.length === 0 ? t('itsm.none') : article.relatedProblemIds.map((related) => <code key={related}>{short(related)} </code>)}</dd></>}
+            {article.relatedIncidentIds && <><dt>{t('nav.incidents')}</dt><dd>{article.relatedIncidentIds.length === 0 ? t('itsm.none') : article.relatedIncidentIds.map((related) => <code key={related}>{short(related)} </code>)}</dd></>}
           </dl>
 
           {detail.data?.trail && (
             <>
-              <div className="actions" aria-label="Actions">
+              <div className="actions" aria-label={t('itsm.actions')}>
                 {ARTICLE_ACTIONS[article.status].map(({ action, label }) => (
-                  <button key={action} type="button" disabled={busy} onClick={() => void run(() => knowledge.control(id, action as ArticleAction))}>{label}</button>
+                  <button key={action} type="button" disabled={busy} onClick={() => void run(() => knowledge.control(id, action as ArticleAction))}>{actionLabel(label)}</button>
                 ))}
-                {article.status === 'DRAFT' && <button type="button" disabled={busy} onClick={() => setPending('edit')}>Edit</button>}
-                {article.status === 'IN_REVIEW' && <button type="button" disabled={busy} onClick={() => setPending('return')}>Return for changes</button>}
-                {article.status === 'PUBLISHED' && <button type="button" disabled={busy} onClick={() => void newVersion()}>New version</button>}
+                {article.status === 'DRAFT' && <button type="button" disabled={busy} onClick={() => setPending('edit')}>{t('common.edit')}</button>}
+                {article.status === 'IN_REVIEW' && <button type="button" disabled={busy} onClick={() => setPending('return')}>{t('kb.returnForChanges')}</button>}
+                {article.status === 'PUBLISHED' && <button type="button" disabled={busy} onClick={() => void newVersion()}>{t('kb.newVersion')}</button>}
               </div>
 
               {pending === 'edit' && (
                 <ArticleForm article={article} onCancel={() => setPending(undefined)} onSaved={() => { setPending(undefined); detail.reload(); onChanged(); }} />
               )}
               {pending === 'return' && (
-                <form className="form" aria-label="Return article" onSubmit={(e) => { e.preventDefault(); void run(() => knowledge.returnForChanges(id, comment.trim())); }}>
-                  <label>What should the author change?<textarea value={comment} maxLength={1000} onChange={(e) => setComment(e.target.value)} /></label>
+                <form className="form" aria-label={t('kb.returnArticle')} onSubmit={(e) => { e.preventDefault(); void run(() => knowledge.returnForChanges(id, comment.trim())); }}>
+                  <label>{t('kb.whatChange')}<textarea value={comment} maxLength={1000} onChange={(e) => setComment(e.target.value)} /></label>
                   <div className="actions">
-                    <button type="submit" className="primary" disabled={comment.trim() === '' || busy}>Return</button>
-                    <button type="button" onClick={() => setPending(undefined)}>Never mind</button>
+                    <button type="submit" className="primary" disabled={comment.trim() === '' || busy}>{t('common.return')}</button>
+                    <button type="button" onClick={() => setPending(undefined)}>{t('itsm.neverMind')}</button>
                   </div>
                 </form>
               )}
@@ -262,7 +267,7 @@ function ArticleDetail({ id, onClose, onChanged, onOpen }: { id: string; onClose
 
           {detail.data?.versions && detail.data.versions.length > 1 && (
             <>
-              <h3>Versions</h3>
+              <h3>{t('kb.versions')}</h3>
               <ul>
                 {detail.data.versions.map((version) => (
                   <li key={version.id}>
@@ -276,12 +281,12 @@ function ArticleDetail({ id, onClose, onChanged, onOpen }: { id: string; onClose
 
           {detail.data?.trail && (
             <>
-              <h3>History</h3>
+              <h3>{t('itsm.history')}</h3>
               <ol className="audit">
                 {detail.data.trail.map((entry) => (
                   <li key={`${entry.occurredAt}-${entry.action}`}>
                     <strong>{entry.action}</strong> by {entry.executor}
-                    <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                    <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
                   </li>
                 ))}
               </ol>
