@@ -3,10 +3,12 @@ import { ASSET_ACTIONS, assetApi, type AssetAction } from '../api/services';
 import { ASSET_CATEGORIES, ASSET_STATUSES, type Asset, type AssetCategory, type AssetStatus, type AuditEntry } from '../api/types';
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
+import { useI18n } from '../i18n';
 import { useAsync } from '../useAsync';
 import { NewAssetForm } from './NewAssetForm';
 
 export function AssetsPage() {
+  const { t, status: statusLabel } = useI18n();
   const { api } = useSession();
   const assets = assetApi(api);
   const [status, setStatus] = useState<AssetStatus | ''>('');
@@ -24,8 +26,8 @@ export function AssetsPage() {
   return (
     <section>
       <div className="page-head">
-        <h1>Assets</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New asset</button>
+        <h1>{t('nav.assets')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('assets.new')}</button>
       </div>
       {creating && (
         <NewAssetForm
@@ -38,31 +40,31 @@ export function AssetsPage() {
         />
       )}
       <div className="filters">
-        <input type="search" aria-label="Search by name or serial" placeholder="Search name or serial" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as AssetStatus | '')}>
-          <option value="">All statuses</option>
+        <input type="search" aria-label={t('assets.searchLabel')} placeholder={t('assets.searchPlaceholder')} value={query} onChange={(e) => setQuery(e.target.value)} />
+        <select aria-label={t('common.status')} value={status} onChange={(e) => setStatus(e.target.value as AssetStatus | '')}>
+          <option value="">{t('common.allStatuses')}</option>
           {ASSET_STATUSES.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>{statusLabel(s)}</option>
           ))}
         </select>
-        <select aria-label="Category" value={category} onChange={(e) => setCategory(e.target.value as AssetCategory | '')}>
-          <option value="">All categories</option>
+        <select aria-label={t('common.category')} value={category} onChange={(e) => setCategory(e.target.value as AssetCategory | '')}>
+          <option value="">{t('common.allCategories')}</option>
           {ASSET_CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
-        <span className="muted">{list.loading ? 'Loading...' : `${rows.length} shown`}</span>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: rows.length })}</span>
       </div>
 
       <ProblemBanner error={list.error} />
 
       <div className="split">
         {rows.length === 0 && !list.loading ? (
-          <Empty>No assets match.</Empty>
+          <Empty>{t('assets.empty')}</Empty>
         ) : (
           <table>
             <thead>
-              <tr><th>Name</th><th>Category</th><th>Serial</th><th>Status</th></tr>
+              <tr><th>{t('common.name')}</th><th>{t('common.category')}</th><th>{t('assets.col.serial')}</th><th>{t('common.status')}</th></tr>
             </thead>
             <tbody>
               {rows.map((asset) => (
@@ -85,6 +87,7 @@ export function AssetsPage() {
 }
 
 function AssetDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const { t, status: statusLabel, action: actionLabel, locale } = useI18n();
   const { api } = useSession();
   const assets = assetApi(api);
   const detail = useAsync<{ asset: Asset; audit: AuditEntry[] }>(
@@ -111,23 +114,23 @@ function AssetDetail({ id, onClose, onChanged }: { id: string; onClose: () => vo
   const asset = detail.data?.asset;
   const specifications = Object.entries(asset?.specifications ?? {});
   return (
-    <aside className="detail" aria-label="Asset detail">
+    <aside className="detail" aria-label={t('assets.detail')}>
       <div className="detail-head">
-        <h2>{asset?.name ?? 'Asset'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{asset?.name ?? t('assets.detailFallback')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={detail.error ?? actionError} />
       {asset && (
         <>
           <dl>
-            <dt>Status</dt><dd><StatusBadge status={asset.status} /></dd>
-            <dt>Category</dt><dd>{asset.category}</dd>
-            <dt>Serial</dt><dd><code>{asset.serialNumber}</code></dd>
+            <dt>{t('common.status')}</dt><dd><StatusBadge status={asset.status} /></dd>
+            <dt>{t('common.category')}</dt><dd>{asset.category}</dd>
+            <dt>{t('assets.col.serial')}</dt><dd><code>{asset.serialNumber}</code></dd>
             <dt>Id</dt><dd><code>{asset.id}</code></dd>
           </dl>
           {specifications.length > 0 && (
             <>
-              <h3>Specifications</h3>
+              <h3>{t('assets.specifications')}</h3>
               <dl>
                 {specifications.map(([key, value]) => (
                   <div key={key}><dt>{key}</dt><dd>{value}</dd></div>
@@ -137,16 +140,16 @@ function AssetDetail({ id, onClose, onChanged }: { id: string; onClose: () => vo
           )}
           <div className="actions">
             {ASSET_ACTIONS[asset.status].map(({ action, label }) => (
-              <button key={action} type="button" disabled={busy} onClick={() => run(action)}>{label}</button>
+              <button key={action} type="button" disabled={busy} onClick={() => run(action)}>{actionLabel(label)}</button>
             ))}
           </div>
-          <h3>Audit log</h3>
+          <h3>{t('assets.auditLog')}</h3>
           <ol className="audit">
             {detail.data?.audit.map((entry) => (
               <li key={`${entry.occurredAt}-${entry.action}`}>
-                <strong>{entry.action}</strong> by {entry.executor}
-                {entry.fromStatus && entry.toStatus && entry.fromStatus !== entry.toStatus && <> - {entry.fromStatus} to {entry.toStatus}</>}
-                <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                <strong>{entry.action}</strong> {t('assets.audit.by', { executor: entry.executor })}
+                {entry.fromStatus && entry.toStatus && entry.fromStatus !== entry.toStatus && t('assets.audit.fromTo', { from: statusLabel(entry.fromStatus), to: statusLabel(entry.toStatus) })}
+                <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
               </li>
             ))}
           </ol>

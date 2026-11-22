@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { en, type MessageKey } from './en';
+import { actionPt } from './actions';
 import { pt } from './pt';
 import { statusPt } from './status';
 
@@ -50,6 +51,8 @@ interface I18n {
   t: (key: MessageKey, params?: Params) => string;
   /** The label of a status pill: Portuguese when known, otherwise the value as the backend sends it with the underscores as spaces. */
   status: (value: string) => string;
+  /** The text of an action button: Portuguese when known, otherwise the English label. */
+  action: (label: string) => string;
   /** The locale for dates and numbers: `new Date(x).toLocaleString(locale)`. */
   locale: string;
 }
@@ -64,6 +67,7 @@ function build(language: Language, setLanguage: (language: Language) => void): I
       const plain = value.replace(/_/g, ' ');
       return language === 'pt' ? (statusPt[value.toLowerCase()] ?? plain) : plain;
     },
+    action: (label) => (language === 'pt' ? (actionPt[label] ?? label) : label),
     locale: LOCALES[language],
   };
 }
