@@ -53,9 +53,22 @@ CI runs the same three on every push.
 ```
 src/api/        fetch client (tenant/executor/bearer headers, RFC 7807 -> ProblemError), per-service wrappers, DTO types
 src/auth/       session context
-src/pages/      Login, Assets, Discovery, Topology
+src/i18n/       the PT/EN dictionaries (en.ts is the source, pt.ts is typed against it), the provider and the helpers for statuses, actions and option labels
+src/components/ layout, the rail (language and theme switch), feedback banners
+src/pages/      one file per screen
 src/topology/   layered graph layout (pure, tested) and the SVG view
+src/theme.ts    system / light / dark, kept in this browser
 ```
+
+## Languages and theme
+
+The app speaks Portuguese (Brazil) and English; the rail at the left edge (bottom right on a narrow window) switches the language and the theme. With no choice made, the browser's language and the system's colour scheme decide.
+
+- `src/i18n/en.ts` holds every text with a key (`{name}` marks a value filled in); `pt.ts` is typed `Record<MessageKey, string>`, so the compiler names a key that is missing in Portuguese. Use `const { t } = useI18n()` and `t('key', { name })`.
+- Text that is not ours is shown as it arrives: error titles and details from the services, asset categories, and technical values such as `AWS` or `USD`.
+- Enum values (statuses, levels, kinds) go through `status()`, `enumValue()` or `label()` (`statusPt`, `labelPt` and `actionPt` map the English text to Portuguese); English keeps the API's own text. Tests fail when a status with a colour class, an action label or an option of the tables in `api/types.ts` has no Portuguese.
+- Dates use `locale` (`pt-BR` or `en-GB`) from `useI18n()`.
+- The Portuguese was written by the developers of this app and has not been reviewed by a native speaker of the audience.
 
 ## Known limits (v1)
 

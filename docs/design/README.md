@@ -1,8 +1,8 @@
 # ThinkLab design reference
 
 One visual language for every ThinkLab surface: this web app, the Quick Install add-on (boot menu, offline manual,
-wallpapers) and the diagrams used in documentation. This folder is a **reference pack**: it changes nothing in the app
-yet. The source of truth is `tokens.json`; everything else here is derived from it or shows it in use.
+wallpapers) and the diagrams used in documentation. This folder is a **reference pack**; the web app adopted it on 2026-11-20/22 (see
+'Adopting it in this app' at the end). The source of truth is `tokens.json`; everything else here is derived from it or shows it in use.
 
 | File | What it is |
 |---|---|
@@ -77,7 +77,7 @@ for offline use.
 
 ![Boot menu, dark](examples/boot-menu-dark.png)
 
-## Adopting it in this app (not done here)
+## Adopting it in this app (done)
 
 `src/styles.css` already uses custom properties, so adoption is a mapping exercise:
 
@@ -95,8 +95,11 @@ for offline use.
 | `--danger-text` | `--tl-error` |
 | `--nav-bg` | `--tl-nav-bar` |
 
-Suggested order: fonts, then the palette mapping, then the section bar and status pill, then the topology graph colours
-(impact levels from the accent seeds). Check contrast for the three impact levels in both schemes before shipping.
+What the app took, decided with the owner:
+
+- **Done:** IBM Plex Sans/Mono and Barlow Condensed; the palette (`src/tokens.css` is a copy of `tokens.css` and `styles.css` maps its variables to the roles above); the rail with the language and theme switch and the red dot; the status pill; the numbered section bars, only on the sections that sit loose on a page (not on cards, forms or detail panels); the halftone background, only on the sign-in screen; the topology impact colours from the red, orange and yellow seeds.
+- **Contrast:** the light primary (4.4:1) and teal (4.0:1) read under 4.5:1 on white, so the app mixes in a little of the text colour (5.0:1 and 5.4:1); the pack is unchanged. The impact colours read 4.8:1 or more under the text colour in both schemes.
+- **Not adopted:** the THINK tag, the crosshair corners of panels and the code panel with line numbers.
 
 ## Keeping the two projects aligned
 

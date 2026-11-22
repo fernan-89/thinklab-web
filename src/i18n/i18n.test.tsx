@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as apiTypes from '../api/types';
 import { labelPt } from './labels';
+import { KIT_RULES, KNOWN_LIMITS, SYSTEMS } from '../quickinstall/kits';
+import { FEATURES, SOURCES } from '../pages/Plan';
 import { ARTICLE_ACTIONS, ASSET_ACTIONS, INCIDENT_ACTIONS, PROBLEM_ACTIONS, REQUEST_ACTIONS } from '../api/services';
 import { actionPt } from './actions';
 import { en } from './en';
@@ -49,6 +51,15 @@ describe('the dictionaries', () => {
       apiTypes.AGREEMENT_KINDS, apiTypes.VENDOR_CATEGORIES, apiTypes.LICENSE_UNITS, apiTypes.LINE_CATEGORIES, apiTypes.RESOURCE_STATES, apiTypes.RESOURCE_KINDS,
       apiTypes.RESOURCE_PRESENCES, apiTypes.ORDER_FULFILMENTS, apiTypes.AGREEMENT_STANDINGS, apiTypes.LICENSE_LEVELS, apiTypes.COST_LEVELS, apiTypes.SUBNET_LEVELS] as string[][];
     expect(lists.flat().filter((value) => !statusPt[value.toLowerCase()])).toEqual([]);
+  });
+  it('give Portuguese to the plan features and sources, and to the Quick Install catalog texts', () => {
+    const texts = [
+      ...FEATURES.map((feature) => feature.label), ...Object.values(SOURCES),
+      ...SYSTEMS.flatMap((system) => [...(system.family === 'Recovery' ? [system.family] : []), system.role, ...system.includes, ...(system.note ? [system.note] : [])]), // Windows and Linux are product names
+      ...KIT_RULES, ...KNOWN_LIMITS, 'English (EN-US)', 'Portuguese (PT-BR)',
+    ];
+    expect(texts.length).toBeGreaterThan(40);
+    expect([...new Set(texts)].filter((text) => !labelPt[text])).toEqual([]);
   });
   it('give Portuguese to the action labels of the areas already translated', () => {
     const tables: Record<string, { action: string; label: string }[]>[] = [ASSET_ACTIONS, INCIDENT_ACTIONS, REQUEST_ACTIONS, PROBLEM_ACTIONS, ARTICLE_ACTIONS];
