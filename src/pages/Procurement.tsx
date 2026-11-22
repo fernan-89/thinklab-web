@@ -7,15 +7,17 @@ import {
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
+import { useI18n } from '../i18n';
 
 function toError(failure: unknown): Error {
   return failure instanceof Error ? failure : new Error(String(failure));
 }
 
-const when = (value?: string) => (value ? new Date(value).toLocaleString() : undefined);
+const when = (value: string | undefined, locale: string) => (value ? new Date(value).toLocaleString(locale) : undefined);
 const money = (value: number, currency: string) => `${value.toFixed(2)} ${currency}`;
 
 export function ProcurementPage() {
+  const { t, enumValue, status: statusLabel } = useI18n();
   const { api } = useSession();
   const orders = procurementApi(api);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | ''>('');
@@ -34,20 +36,20 @@ export function ProcurementPage() {
   const all = everything.data;
   const tiles: [string, number | undefined][] = [
     ['Late', all?.filter((order) => order.late).length],
-    ['Waiting for approval', all?.filter((order) => order.status === 'PENDING_APPROVAL').length],
-    ['Approved, not placed', all?.filter((order) => order.status === 'APPROVED').length],
-    ['Placed', all?.filter((order) => order.status === 'ORDERED').length],
-    ['Total', all?.length],
+    [t('procurement.waiting'), all?.filter((order) => order.status === 'PENDING_APPROVAL').length],
+    [t('procurement.approvedNotPlaced'), all?.filter((order) => order.status === 'APPROVED').length],
+    [t('procurement.placed'), all?.filter((order) => order.status === 'ORDERED').length],
+    [t('procurement.total'), all?.length],
   ];
 
   return (
     <section>
       <div className="page-head">
-        <h1>Procurement</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New order</button>
+        <h1>{t('nav.procurement')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('procurement.new')}</button>
       </div>
-      <p className="muted">Purchase orders for a vendor, in one currency. An order is sent for approval to the approval service, placed with the vendor once approved, and received in part or in whole by the people who state what arrived. What has arrived and whether the delivery is late are worked out when you look.</p>
-      <div className="tiles" aria-label="Summary">
+      <p className="muted">{t('procurement.intro')}</p>
+      <div className="tiles" aria-label={t('ops.summary')}>
         {tiles.map(([label, value]) => (
           <div key={label} className="tile"><span className="n">{value ?? '-'}</span><span className="l">{label}</span></div>
         ))}
@@ -56,26 +58,26 @@ export function ProcurementPage() {
       <ApprovalBands />
       {creating && <NewOrderForm onCancel={() => setCreating(false)} onCreated={(order) => { setCreating(false); setSelectedId(order.id); reloadAll(); }} />}
       <div className="filters">
-        <select aria-label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}>
-          <option value="">Any status</option>
-          {ORDER_STATUSES.map((value) => <option key={value} value={value}>{value.replace(/_/g, ' ')}</option>)}
+        <select aria-label={t('common.status')} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as OrderStatus | '')}>
+          <option value="">{t('patches.anyStatus')}</option>
+          {ORDER_STATUSES.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <select aria-label="Currency" value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as CostCurrency | '')}>
-          <option value="">Any currency</option>
+        <select aria-label={t('procurement.currency')} value={currencyFilter} onChange={(e) => setCurrencyFilter(e.target.value as CostCurrency | '')}>
+          <option value="">{t('procurement.anyCurrency')}</option>
           {COST_CURRENCIES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <select aria-label="Received" value={fulfilmentFilter} onChange={(e) => setFulfilmentFilter(e.target.value as OrderFulfilment | '')}>
-          <option value="">Any receiving state</option>
-          {ORDER_FULFILMENTS.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('procurement.received')} value={fulfilmentFilter} onChange={(e) => setFulfilmentFilter(e.target.value as OrderFulfilment | '')}>
+          <option value="">{t('procurement.anyReceiving')}</option>
+          {ORDER_FULFILMENTS.map((value) => <option key={value} value={value}>{enumValue(value)}</option>)}
         </select>
-        <label className="inline"><input type="checkbox" checked={lateOnly} onChange={(e) => setLateOnly(e.target.checked)} /> Late only</label>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <label className="inline"><input type="checkbox" checked={lateOnly} onChange={(e) => setLateOnly(e.target.checked)} /> {t('procurement.lateOnly')}</label>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No purchase orders match.</Empty> : (
-          <table aria-label="Purchase orders">
-            <thead><tr><th>Reference</th><th>Status</th><th>Total</th><th>Received</th><th>Expected</th></tr></thead>
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('procurement.noOrders')}</Empty> : (
+          <table aria-label={t('procurement.orders')}>
+            <thead><tr><th>{t('vendors.reference')}</th><th>{t('common.status')}</th><th>{t('procurement.total')}</th><th>{t('procurement.received')}</th><th>{t('procurement.expected')}</th></tr></thead>
             <tbody>
               {list.data?.map((order) => (
                 <tr key={order.id} className={order.id === selectedId ? 'selected' : undefined}>
@@ -100,6 +102,7 @@ export function ProcurementPage() {
  * the greatest lower bound not above its total; with none, an order cannot be sent for approval.
  */
 function ApprovalBands() {
+  const { t } = useI18n();
   const { api } = useSession();
   const bands = useAsync(() => procurementApi(api).bands(), []);
   const [currency, setCurrency] = useState<CostCurrency>('BRL');
@@ -123,16 +126,16 @@ function ApprovalBands() {
   }
 
   return (
-    <section className="card" aria-label="Approval bands">
-      <h2>Approval bands</h2>
-      <p className="muted">From this amount up, in this currency, an order is sent for approval against this policy. An order uses the band with the greatest starting amount that is not above its total.</p>
+    <section className="card" aria-label={t('procurement.bands')}>
+      <h2>{t('procurement.bands')}</h2>
+      <p className="muted">{t('procurement.bandsIntro')}</p>
       <ProblemBanner error={bands.error} />
       {bands.data?.length === 0 && !bands.loading && (
-        <div className="banner" role="status">No approval band yet: an order cannot be sent for approval until there is one. Make a band from 0 for each currency you buy in.</div>
+        <div className="banner" role="status">{t('procurement.noBand')}</div>
       )}
       {bands.data && bands.data.length > 0 && (
-        <table aria-label="Bands">
-          <thead><tr><th>Currency</th><th>From</th><th>Policy</th><th>Made by</th><th /></tr></thead>
+        <table aria-label={t('procurement.bandsAria')}>
+          <thead><tr><th>{t('procurement.currency')}</th><th>{t('alerts.from')}</th><th>{t('ops.policy')}</th><th>{t('procurement.madeBy')}</th><th /></tr></thead>
           <tbody>
             {bands.data.map((band: ApprovalBand) => (
               <tr key={band.id}>
@@ -140,20 +143,20 @@ function ApprovalBands() {
                 <td>{money(band.fromAmount, band.currency)}</td>
                 <td className="code">{band.policyId}</td>
                 <td>{band.createdBy}</td>
-                <td><button type="button" disabled={busy} onClick={() => void run(() => procurementApi(api).retireBand(band.id))}>{`Retire ${band.currency} from ${band.fromAmount.toFixed(2)}`}</button></td>
+                <td><button type="button" disabled={busy} onClick={() => void run(() => procurementApi(api).retireBand(band.id))}>{t('procurement.retireBand', { currency: band.currency, amount: band.fromAmount.toFixed(2) })}</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      <form className="form" aria-label="New band" onSubmit={(e) => { e.preventDefault(); if (ready) void run(() => procurementApi(api).createBand({ currency, fromAmount: Number(fromAmount), policyId: policyId.trim() })); }}>
-        <label>Band currency
+      <form className="form" aria-label={t('procurement.newBand')} onSubmit={(e) => { e.preventDefault(); if (ready) void run(() => procurementApi(api).createBand({ currency, fromAmount: Number(fromAmount), policyId: policyId.trim() })); }}>
+        <label>{t('procurement.bandCurrency')}
           <select value={currency} onChange={(e) => setCurrency(e.target.value as CostCurrency)}>{COST_CURRENCIES.map((value) => <option key={value} value={value}>{value}</option>)}</select>
         </label>
-        <label>From amount<input inputMode="decimal" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} /></label>
-        <label>Approval policy (id)<input value={policyId} onChange={(e) => setPolicyId(e.target.value)} /></label>
+        <label>{t('procurement.fromAmount')}<input inputMode="decimal" value={fromAmount} onChange={(e) => setFromAmount(e.target.value)} /></label>
+        <label>{t('procurement.policyId')}<input value={policyId} onChange={(e) => setPolicyId(e.target.value)} /></label>
         <ProblemBanner error={error} />
-        <div className="actions"><button type="submit" className="primary" disabled={!ready || busy}>Make band</button></div>
+        <div className="actions"><button type="submit" className="primary" disabled={!ready || busy}>{t('procurement.makeBand')}</button></div>
       </form>
     </section>
   );
@@ -163,6 +166,7 @@ interface LineDraft { category: LineCategory; item: string; quantity: string; un
 const emptyLine = (): LineDraft => ({ category: 'HARDWARE', item: '', quantity: '1', unitPrice: '' });
 
 function NewOrderForm({ onCreated, onCancel }: { onCreated: (order: PurchaseOrder) => void; onCancel: () => void }) {
+  const { t, enumValue } = useI18n();
   const { api, session } = useSession();
   const [reference, setReference] = useState('');
   const [vendorId, setVendorId] = useState('');
@@ -193,38 +197,39 @@ function NewOrderForm({ onCreated, onCancel }: { onCreated: (order: PurchaseOrde
   }
 
   return (
-    <form className="card form" aria-label="New order" onSubmit={submit}>
-      <h2>New purchase order</h2>
-      <label>Reference<input value={reference} maxLength={40} onChange={(e) => setReference(e.target.value)} /></label>
-      <label>Vendor (id)<input value={vendorId} onChange={(e) => setVendorId(e.target.value)} /></label>
-      <label>Requester (id)<input value={requesterId} onChange={(e) => setRequesterId(e.target.value)} /></label>
-      <label>Currency
+    <form className="card form" aria-label={t('procurement.new')} onSubmit={submit}>
+      <h2>{t('procurement.newOrder')}</h2>
+      <label>{t('vendors.reference')}<input value={reference} maxLength={40} onChange={(e) => setReference(e.target.value)} /></label>
+      <label>{t('procurement.vendorId')}<input value={vendorId} onChange={(e) => setVendorId(e.target.value)} /></label>
+      <label>{t('procurement.requesterId')}<input value={requesterId} onChange={(e) => setRequesterId(e.target.value)} /></label>
+      <label>{t('procurement.currency')}
         <select value={currency} onChange={(e) => setCurrency(e.target.value as CostCurrency)}>{COST_CURRENCIES.map((value) => <option key={value} value={value}>{value}</option>)}</select>
       </label>
-      <label>Expected on (optional)<input type="date" value={expectedOn} onChange={(e) => setExpectedOn(e.target.value)} /></label>
-      <h3>Lines</h3>
+      <label>{t('procurement.expectedOn')}<input type="date" value={expectedOn} onChange={(e) => setExpectedOn(e.target.value)} /></label>
+      <h3>{t('procurement.lines')}</h3>
       {lines.map((line, index) => (
-        <fieldset key={index} className="line" aria-label={`Line ${index + 1}`}>
-          <select aria-label={`Category ${index + 1}`} value={line.category} onChange={(e) => setLine(index, { category: e.target.value as LineCategory })}>
-            {LINE_CATEGORIES.map((value) => <option key={value} value={value}>{value}</option>)}
+        <fieldset key={index} className="line" aria-label={t('procurement.lineN', { n: index + 1 })}>
+          <select aria-label={t('procurement.categoryN', { n: index + 1 })} value={line.category} onChange={(e) => setLine(index, { category: e.target.value as LineCategory })}>
+            {LINE_CATEGORIES.map((value) => <option key={value} value={value}>{enumValue(value)}</option>)}
           </select>
-          <input aria-label={`Item ${index + 1}`} placeholder="Item (part number or SKU)" value={line.item} maxLength={64} onChange={(e) => setLine(index, { item: e.target.value })} />
-          <input aria-label={`Quantity ${index + 1}`} inputMode="numeric" value={line.quantity} onChange={(e) => setLine(index, { quantity: e.target.value })} />
-          <input aria-label={`Unit price ${index + 1}`} inputMode="decimal" placeholder="Unit price" value={line.unitPrice} onChange={(e) => setLine(index, { unitPrice: e.target.value })} />
-          {lines.length > 1 && <button type="button" onClick={() => setLines(lines.filter((_, i) => i !== index))}>Remove line {index + 1}</button>}
+          <input aria-label={t('procurement.itemN', { n: index + 1 })} placeholder={t('procurement.itemPlaceholder')} value={line.item} maxLength={64} onChange={(e) => setLine(index, { item: e.target.value })} />
+          <input aria-label={t('procurement.quantityN', { n: index + 1 })} inputMode="numeric" value={line.quantity} onChange={(e) => setLine(index, { quantity: e.target.value })} />
+          <input aria-label={t('procurement.unitPriceN', { n: index + 1 })} inputMode="decimal" placeholder={t('procurement.unitPrice')} value={line.unitPrice} onChange={(e) => setLine(index, { unitPrice: e.target.value })} />
+          {lines.length > 1 && <button type="button" onClick={() => setLines(lines.filter((_, i) => i !== index))}>{t('procurement.removeLine', { n: index + 1 })}</button>}
         </fieldset>
       ))}
-      <button type="button" onClick={() => setLines([...lines, emptyLine()])} disabled={lines.length >= 50}>Add a line</button>
+      <button type="button" onClick={() => setLines([...lines, emptyLine()])} disabled={lines.length >= 50}>{t('procurement.addLine')}</button>
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Create order'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : t('procurement.createOrder')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
 }
 
 function OrderDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const { t, locale } = useI18n();
   const { api } = useSession();
   const orders = procurementApi(api);
   const detail = useAsync<{ order: PurchaseOrder; receipts: OrderReceipt[]; trail: AuditEntry[] }>(async () => {
@@ -254,25 +259,25 @@ function OrderDetail({ id, onClose, onChanged }: { id: string; onClose: () => vo
   }
 
   return (
-    <aside className="detail" aria-label="Order detail">
+    <aside className="detail" aria-label={t('procurement.detail')}>
       <div className="detail-head">
-        <h2>{order?.reference ?? 'Purchase order'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{order?.reference ?? t('procurement.one')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={actionError ?? detail.error} />
       {order && (
         <>
           <p><StatusBadge status={order.status} />{order.status === 'ORDERED' && <> <StatusBadge status={order.fulfilment} /></>}{order.late && <> <StatusBadge status="LATE" /></>}</p>
           <dl>
-            <dt>Total</dt><dd>{money(order.total, order.currency)}</dd>
-            <dt>Vendor</dt><dd className="code">{order.vendorId}</dd>
-            <dt>Requester</dt><dd className="code">{order.requesterId}</dd>
-            {order.expectedOn && <><dt>Expected on</dt><dd>{order.expectedOn}</dd></>}
-            {order.orderedAt && <><dt>Placed</dt><dd>{when(order.orderedAt)}</dd></>}
+            <dt>{t('procurement.total')}</dt><dd>{money(order.total, order.currency)}</dd>
+            <dt>{t('vendors.vendor')}</dt><dd className="code">{order.vendorId}</dd>
+            <dt>{t('procurement.requester')}</dt><dd className="code">{order.requesterId}</dd>
+            {order.expectedOn && <><dt>{t('procurement.expectedOnDetail')}</dt><dd>{order.expectedOn}</dd></>}
+            {order.orderedAt && <><dt>{t('procurement.placed')}</dt><dd>{when(order.orderedAt, locale)}</dd></>}
           </dl>
-          <h3>Lines</h3>
-          <table aria-label="Lines">
-            <thead><tr><th>#</th><th>Category</th><th>Item</th><th>Unit price</th><th>Ordered</th><th>Received</th><th>Left</th></tr></thead>
+          <h3>{t('procurement.lines')}</h3>
+          <table aria-label={t('procurement.lines')}>
+            <thead><tr><th>#</th><th>{t('common.category')}</th><th>{t('integrations.item')}</th><th>{t('procurement.unitPrice')}</th><th>{t('procurement.ordered')}</th><th>{t('procurement.received')}</th><th>{t('procurement.left')}</th></tr></thead>
             <tbody>
               {order.lines.map((line) => (
                 <tr key={line.lineNo}>
@@ -281,50 +286,50 @@ function OrderDetail({ id, onClose, onChanged }: { id: string; onClose: () => vo
               ))}
             </tbody>
           </table>
-          <div className="actions" aria-label="Actions">
-            {order.status === 'DRAFT' && <button type="button" disabled={busy || order.lines.length === 0} onClick={() => void run(() => orders.submit(id))}>Send for approval</button>}
-            {order.status === 'APPROVED' && <button type="button" disabled={busy} onClick={() => void run(() => orders.place(id))}>Place with the vendor</button>}
+          <div className="actions" aria-label={t('itsm.actions')}>
+            {order.status === 'DRAFT' && <button type="button" disabled={busy || order.lines.length === 0} onClick={() => void run(() => orders.submit(id))}>{t('procurement.sendApproval')}</button>}
+            {order.status === 'APPROVED' && <button type="button" disabled={busy} onClick={() => void run(() => orders.place(id))}>{t('procurement.place')}</button>}
             {['DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'ORDERED'].includes(order.status) && !(order.status === 'ORDERED' && detail.data!.receipts.length > 0)
-              && <button type="button" disabled={busy} onClick={() => void run(() => orders.cancel(id))}>Cancel order</button>}
+              && <button type="button" disabled={busy} onClick={() => void run(() => orders.cancel(id))}>{t('procurement.cancelOrder')}</button>}
           </div>
           {order.status === 'PENDING_APPROVAL' && (
-            <form className="form" aria-label="Decision" onSubmit={(e) => e.preventDefault()}>
-              <label>Approver (id)<input value={approverId} onChange={(e) => setApproverId(e.target.value)} /></label>
+            <form className="form" aria-label={t('procurement.decision')} onSubmit={(e) => e.preventDefault()}>
+              <label>{t('procurement.approverId')}<input value={approverId} onChange={(e) => setApproverId(e.target.value)} /></label>
               <div className="actions">
-                <button type="button" disabled={busy || approverId.trim() === ''} onClick={() => void run(() => orders.decide(id, approverId.trim(), 'APPROVE'))}>Approve</button>
-                <button type="button" disabled={busy || approverId.trim() === ''} onClick={() => void run(() => orders.decide(id, approverId.trim(), 'REJECT'))}>Reject</button>
+                <button type="button" disabled={busy || approverId.trim() === ''} onClick={() => void run(() => orders.decide(id, approverId.trim(), 'APPROVE'))}>{t('requests.approve')}</button>
+                <button type="button" disabled={busy || approverId.trim() === ''} onClick={() => void run(() => orders.decide(id, approverId.trim(), 'REJECT'))}>{t('requests.reject')}</button>
               </div>
             </form>
           )}
           {order.status === 'ORDERED' && (
-            <form className="form" aria-label="Receive goods" onSubmit={(e) => { e.preventDefault(); void run(() => orders.receive(id, { lineNo: Number(lineNo), deliveryRef: deliveryRef.trim(), quantity: Number(quantity) }).then(() => { setDeliveryRef(''); setQuantity(''); })); }}>
-              <label>Line
+            <form className="form" aria-label={t('procurement.receiveGoods')} onSubmit={(e) => { e.preventDefault(); void run(() => orders.receive(id, { lineNo: Number(lineNo), deliveryRef: deliveryRef.trim(), quantity: Number(quantity) }).then(() => { setDeliveryRef(''); setQuantity(''); })); }}>
+              <label>{t('procurement.line')}
                 <select value={lineNo} onChange={(e) => setLineNo(e.target.value)}>{order.lines.map((line) => <option key={line.lineNo} value={line.lineNo}>{`${line.lineNo}: ${line.item}`}</option>)}</select>
               </label>
-              <label>Delivery reference<input value={deliveryRef} maxLength={40} onChange={(e) => setDeliveryRef(e.target.value)} /></label>
-              <label>Quantity received<input inputMode="numeric" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></label>
-              <button type="submit" className="primary" disabled={busy || deliveryRef.trim() === '' || quantity.trim() === ''}>Record receipt</button>
+              <label>{t('procurement.deliveryRef')}<input value={deliveryRef} maxLength={40} onChange={(e) => setDeliveryRef(e.target.value)} /></label>
+              <label>{t('procurement.quantityReceived')}<input inputMode="numeric" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></label>
+              <button type="submit" className="primary" disabled={busy || deliveryRef.trim() === '' || quantity.trim() === ''}>{t('procurement.recordReceipt')}</button>
             </form>
           )}
-          <h3>Receipts</h3>
-          {detail.data?.receipts.length === 0 ? <Empty>Nothing received yet.</Empty> : (
-            <table aria-label="Receipts">
-              <thead><tr><th>Line</th><th>Delivery</th><th>Quantity</th><th>When</th><th>By</th></tr></thead>
+          <h3>{t('procurement.receipts')}</h3>
+          {detail.data?.receipts.length === 0 ? <Empty>{t('procurement.nothingReceived')}</Empty> : (
+            <table aria-label={t('procurement.receipts')}>
+              <thead><tr><th>{t('procurement.line')}</th><th>{t('procurement.delivery')}</th><th>{t('procurement.quantity')}</th><th>{t('audit.col.when')}</th><th>{t('ops.by')}</th></tr></thead>
               <tbody>
                 {detail.data?.receipts.map((receipt) => (
                   <tr key={`${receipt.lineNo}-${receipt.deliveryRef}`}>
-                    <td>{receipt.lineNo}</td><td className="code">{receipt.deliveryRef}</td><td>{receipt.quantity}</td><td>{when(receipt.receivedAt)}</td><td>{receipt.reportedBy}</td>
+                    <td>{receipt.lineNo}</td><td className="code">{receipt.deliveryRef}</td><td>{receipt.quantity}</td><td>{when(receipt.receivedAt, locale)}</td><td>{receipt.reportedBy}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-          <h3>History</h3>
+          <h3>{t('itsm.history')}</h3>
           <ol className="audit">
             {detail.data?.trail.map((entry) => (
               <li key={`${entry.occurredAt}-${entry.action}`}>
                 <strong>{entry.action}</strong> by {entry.executor}
-                <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
               </li>
             ))}
           </ol>

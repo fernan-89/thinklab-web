@@ -43,9 +43,11 @@ describe('the dictionaries', () => {
     expect(texts.filter((text) => !labelPt[text])).toEqual([]);
   });
 
-  it('give Portuguese to the enum values the selects of the operations screens show', () => {
+  it('give Portuguese to the enum values the selects of the operations and business screens show', () => {
     const lists = [apiTypes.HEALTHS, apiTypes.PROTECTIONS, apiTypes.READINESSES, apiTypes.PATCH_COMPLIANCES, apiTypes.CAPACITY_LEVELS, apiTypes.CAPACITY_FORECASTS, apiTypes.CAPACITY_METRICS,
-      apiTypes.SEVERITIES, apiTypes.EXERCISE_OUTCOMES, apiTypes.EXERCISE_FAILURE_REASONS, apiTypes.WAIVER_REASONS] as string[][];
+      apiTypes.SEVERITIES, apiTypes.EXERCISE_OUTCOMES, apiTypes.EXERCISE_FAILURE_REASONS, apiTypes.WAIVER_REASONS,
+      apiTypes.AGREEMENT_KINDS, apiTypes.VENDOR_CATEGORIES, apiTypes.LICENSE_UNITS, apiTypes.LINE_CATEGORIES, apiTypes.RESOURCE_STATES, apiTypes.RESOURCE_KINDS,
+      apiTypes.RESOURCE_PRESENCES, apiTypes.ORDER_FULFILMENTS, apiTypes.AGREEMENT_STANDINGS, apiTypes.LICENSE_LEVELS, apiTypes.COST_LEVELS, apiTypes.SUBNET_LEVELS] as string[][];
     expect(lists.flat().filter((value) => !statusPt[value.toLowerCase()])).toEqual([]);
   });
   it('give Portuguese to the action labels of the areas already translated', () => {

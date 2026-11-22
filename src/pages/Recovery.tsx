@@ -146,7 +146,7 @@ function NewPlanForm({ onCreated, onCancel }: { onCreated: (plan: RecoveryPlan) 
 }
 
 function PlanDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
-  const { t, locale, label: optionLabel } = useI18n();
+  const { t, locale, label: optionLabel, enumValue, status: statusLabel } = useI18n();
   const { api } = useSession();
   const dr = drApi(api);
   const detail = useAsync<{ plan: RecoveryPlan; exercises: RecoveryExercise[]; trail: AuditEntry[] }>(async () => {
@@ -208,7 +208,7 @@ function PlanDetail({ id, onClose, onChanged }: { id: string; onClose: () => voi
                   <tr key={entry.id}>
                     <td>{new Date(entry.startedAt).toLocaleString(locale)}</td>
                     <td>{optionLabel(kindEnglish(entry.kind))}</td>
-                    <td>{entry.outcome === 'SUCCEEDED' ? 'succeeded' : <span className="field-error">{entry.outcome.toLowerCase()}: {entry.failureReason}</span>}</td>
+                    <td>{entry.outcome === 'SUCCEEDED' ? statusLabel('succeeded') : <span className="field-error">{statusLabel(entry.outcome).toLowerCase()}: {entry.failureReason ? enumValue(entry.failureReason) : ''}</span>}</td>
                     <td>{t('common.minutes', { count: entry.durationMinutes })}</td>
                     <td>{entry.dataLossMinutes !== undefined ? t('common.minutes', { count: entry.dataLossMinutes }) : <span className="muted">-</span>}</td>
                     <td>{entry.reportedBy}</td>
@@ -284,7 +284,7 @@ function ReportExerciseForm({ planId, onReported, onCancel }: { planId: string; 
       <p className="muted">{t('recovery.durationNote')}</p>
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : 'Report'}</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : t('recovery.reportSubmit')}</button>
         <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
