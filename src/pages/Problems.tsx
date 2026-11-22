@@ -5,6 +5,7 @@ import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
 import { isId, parseIds } from './Incidents';
+import { useI18n } from '../i18n';
 
 const short = (id: string) => id.slice(0, 8);
 const OPEN: ProblemStatus[] = ['NEW', 'UNDER_INVESTIGATION', 'KNOWN_ERROR'];
@@ -14,6 +15,7 @@ function toError(failure: unknown): Error {
 }
 
 export function ProblemsPage() {
+  const { t, locale } = useI18n();
   const { api, session } = useSession();
   const problems = problemApi(api);
   const me = session?.executor ?? '';
@@ -37,10 +39,10 @@ export function ProblemsPage() {
   return (
     <section>
       <div className="page-head">
-        <h1>Problems</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New problem</button>
+        <h1>{t('nav.problems')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('problems.new')}</button>
       </div>
-      <p className="muted">The cause behind one or more incidents. A known error is understood and has a workaround, but no permanent fix yet.</p>
+      <p className="muted">{t('problems.intro')}</p>
       {creating && (
         <NewProblemForm
           onCancel={() => setCreating(false)}
@@ -48,24 +50,24 @@ export function ProblemsPage() {
         />
       )}
       <div className="filters">
-        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as ProblemStatus | '')}>
-          <option value="">All statuses</option>
+        <select aria-label={t('common.status')} value={status} onChange={(e) => setStatus(e.target.value as ProblemStatus | '')}>
+          <option value="">{t('common.allStatuses')}</option>
           {PROBLEM_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <select aria-label="Priority" value={priority} onChange={(e) => setPriority(e.target.value as ProblemPriority | '')}>
-          <option value="">All priorities</option>
+        <select aria-label={t('itsm.priority')} value={priority} onChange={(e) => setPriority(e.target.value as ProblemPriority | '')}>
+          <option value="">{t('itsm.allPriorities')}</option>
           {PROBLEM_PRIORITIES.map((value) => <option key={value} value={value}>{value}</option>)}
         </select>
-        <input type="search" aria-label="Explains incident" placeholder="Explains incident (id)" value={incident} onChange={(e) => setIncident(e.target.value)} />
-        <label className="check"><input type="checkbox" checked={openOnly && status === ''} disabled={status !== ''} onChange={(e) => setOpenOnly(e.target.checked)} /> Open only</label>
-        <label className="check"><input type="checkbox" checked={mine} disabled={!isId(me)} onChange={(e) => setMine(e.target.checked)} /> Assigned to me</label>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <input type="search" aria-label={t('problems.explains')} placeholder={t('problems.explainsId')} value={incident} onChange={(e) => setIncident(e.target.value)} />
+        <label className="check"><input type="checkbox" checked={openOnly && status === ''} disabled={status !== ''} onChange={(e) => setOpenOnly(e.target.checked)} /> {t('itsm.openOnly')}</label>
+        <label className="check"><input type="checkbox" checked={mine} disabled={!isId(me)} onChange={(e) => setMine(e.target.checked)} /> {t('itsm.assignedToMe')}</label>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No problems match.</Empty> : (
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('problems.empty')}</Empty> : (
           <table>
-            <thead><tr><th>Problem</th><th>Priority</th><th>Status</th><th>Incidents</th><th>Assignee</th><th>Opened</th></tr></thead>
+            <thead><tr><th>{t('problems.one')}</th><th>{t('itsm.priority')}</th><th>{t('common.status')}</th><th>{t('nav.incidents')}</th><th>{t('itsm.assignee')}</th><th>{t('itsm.opened')}</th></tr></thead>
             <tbody>
               {list.data?.map((problem) => (
                 <tr key={problem.id} className={problem.id === selectedId ? 'selected' : undefined}>
@@ -73,8 +75,8 @@ export function ProblemsPage() {
                   <td><StatusBadge status={problem.priority} /></td>
                   <td><StatusBadge status={problem.status} /></td>
                   <td>{problem.relatedIncidentIds.length}</td>
-                  <td>{problem.assigneeId ? <code>{short(problem.assigneeId)}</code> : <span className="muted">unassigned</span>}</td>
-                  <td>{new Date(problem.createdAt).toLocaleString()}</td>
+                  <td>{problem.assigneeId ? <code>{short(problem.assigneeId)}</code> : <span className="muted">{t('itsm.unassigned')}</span>}</td>
+                  <td>{new Date(problem.createdAt).toLocaleString(locale)}</td>
                 </tr>
               ))}
             </tbody>
@@ -87,6 +89,8 @@ export function ProblemsPage() {
 }
 
 function NewProblemForm({ onCreated, onCancel }: { onCreated: (problem: Problem) => void; onCancel: () => void }) {
+  const { t } = useI18n();
+  const notAnId = (bad: string) => t('itsm.notAnId', { id: bad });
   const { api } = useSession();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -101,9 +105,9 @@ function NewProblemForm({ onCreated, onCancel }: { onCreated: (problem: Problem)
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const parsedIncidents = parseIds(incidents);
-    const parsedChanges = parseIds(changes);
-    const parsedAssets = parseIds(assets);
+    const parsedIncidents = parseIds(incidents, notAnId);
+    const parsedChanges = parseIds(changes, notAnId);
+    const parsedAssets = parseIds(assets, notAnId);
     const failure = parsedIncidents.error ?? parsedChanges.error ?? parsedAssets.error;
     setLocalError(failure);
     if (!ready || failure || !parsedIncidents.ids || !parsedChanges.ids || !parsedAssets.ids) return;
@@ -122,21 +126,21 @@ function NewProblemForm({ onCreated, onCancel }: { onCreated: (problem: Problem)
   }
 
   return (
-    <form className="card form" aria-label="New problem" onSubmit={submit}>
-      <h2>New problem</h2>
-      <label>Title<input value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} /></label>
-      <label>Description (no personal data)<textarea value={description} maxLength={4000} onChange={(e) => setDescription(e.target.value)} /></label>
-      <label>Priority
+    <form className="card form" aria-label={t('problems.new')} onSubmit={submit}>
+      <h2>{t('problems.new')}</h2>
+      <label>{t('itsm.title')}<input value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} /></label>
+      <label>{t('itsm.descriptionNoPersonal')}<textarea value={description} maxLength={4000} onChange={(e) => setDescription(e.target.value)} /></label>
+      <label>{t('itsm.priority')}
         <select value={priority} onChange={(e) => setPriority(e.target.value as ProblemPriority)}>{PROBLEM_PRIORITIES.map((v) => <option key={v} value={v}>{v}</option>)}</select>
       </label>
-      <label>Incidents it explains (ids, optional, separate with spaces or commas)<textarea value={incidents} onChange={(e) => setIncidents(e.target.value)} /></label>
-      <label>Changes related to it (ids, optional)<textarea value={changes} onChange={(e) => setChanges(e.target.value)} /></label>
-      <label>Affected assets (ids, optional)<textarea value={assets} onChange={(e) => setAssets(e.target.value)} /></label>
+      <label>{t('problems.incidentIds')}<textarea value={incidents} onChange={(e) => setIncidents(e.target.value)} /></label>
+      <label>{t('problems.changeIds')}<textarea value={changes} onChange={(e) => setChanges(e.target.value)} /></label>
+      <label>{t('problems.assetIds')}<textarea value={assets} onChange={(e) => setAssets(e.target.value)} /></label>
       {localError && <p className="field-error" role="alert">{localError}</p>}
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Opening...' : 'Open problem'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.opening') : t('problems.open')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
@@ -145,10 +149,12 @@ function NewProblemForm({ onCreated, onCancel }: { onCreated: (problem: Problem)
 type Pending = 'analysis' | 'resolve' | 'reopen' | 'priority' | undefined;
 
 function IdList({ ids }: { ids: string[] }) {
-  return ids.length === 0 ? <>none</> : <>{ids.map((id) => <code key={id}>{short(id)} </code>)}</>;
+  const { t } = useI18n();
+  return ids.length === 0 ? <>{t('itsm.none')}</> : <>{ids.map((id) => <code key={id}>{short(id)} </code>)}</>;
 }
 
 function ProblemDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const { t, locale, action: actionLabel } = useI18n();
   const { api } = useSession();
   const problems = problemApi(api);
   const detail = useAsync<{ problem: Problem; trail: AuditEntry[] }>(async () => {
@@ -213,10 +219,10 @@ function ProblemDetail({ id, onClose, onChanged }: { id: string; onClose: () => 
   const pendingReady = pending === 'analysis' ? rootCause.trim() !== '' || workaround.trim() !== '' : pending === 'priority' ? true : text.trim() !== '';
 
   return (
-    <aside className="detail" aria-label="Problem detail">
+    <aside className="detail" aria-label={t('problems.detail')}>
       <div className="detail-head">
-        <h2>{problem?.title ?? 'Problem'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{problem?.title ?? t('problems.one')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={detail.error ?? actionError} />
       {problem && (
@@ -227,85 +233,85 @@ function ProblemDetail({ id, onClose, onChanged }: { id: string; onClose: () => 
           </p>
           <p>{problem.description}</p>
           <dl>
-            <dt>Assignee</dt><dd>{problem.assigneeId ? <code>{short(problem.assigneeId)}</code> : 'unassigned'}</dd>
-            <dt>Incidents it explains</dt><dd><IdList ids={problem.relatedIncidentIds} /></dd>
-            <dt>Related changes</dt><dd><IdList ids={problem.relatedChangeIds} /></dd>
-            <dt>Affected assets</dt><dd><IdList ids={problem.affectedAssetIds} /></dd>
-            <dt>Root cause</dt><dd>{problem.rootCause ?? <span className="muted">not known yet</span>}</dd>
-            <dt>Workaround</dt><dd>{problem.workaround ?? <span className="muted">none yet</span>}</dd>
-            {problem.resolution && <><dt>Resolution</dt><dd>{problem.resolution}</dd></>}
+            <dt>{t('itsm.assignee')}</dt><dd>{problem.assigneeId ? <code>{short(problem.assigneeId)}</code> : t('itsm.unassigned')}</dd>
+            <dt>{t('problems.incidentsItExplains')}</dt><dd><IdList ids={problem.relatedIncidentIds} /></dd>
+            <dt>{t('problems.relatedChanges')}</dt><dd><IdList ids={problem.relatedChangeIds} /></dd>
+            <dt>{t('itsm.affectedAssets')}</dt><dd><IdList ids={problem.affectedAssetIds} /></dd>
+            <dt>{t('itsm.rootCause')}</dt><dd>{problem.rootCause ?? <span className="muted">{t('problems.notKnownYet')}</span>}</dd>
+            <dt>{t('problems.workaround')}</dt><dd>{problem.workaround ?? <span className="muted">{t('problems.noneYet')}</span>}</dd>
+            {problem.resolution && <><dt>{t('itsm.resolution')}</dt><dd>{problem.resolution}</dd></>}
           </dl>
 
-          <div className="actions" aria-label="Actions">
+          <div className="actions" aria-label={t('itsm.actions')}>
             {PROBLEM_ACTIONS[problem.status].map(({ action, label }) => (
-              <button key={action} type="button" disabled={busy} onClick={() => void run(() => problems.control(id, action as ProblemAction))}>{label}</button>
+              <button key={action} type="button" disabled={busy} onClick={() => void run(() => problems.control(id, action as ProblemAction))}>{actionLabel(label)}</button>
             ))}
             {(problem.status === 'UNDER_INVESTIGATION' || problem.status === 'KNOWN_ERROR') && (
               <>
-                <button type="button" disabled={busy} onClick={() => begin('analysis')}>Record analysis</button>
-                <button type="button" disabled={busy} onClick={() => begin('resolve')}>Resolve</button>
+                <button type="button" disabled={busy} onClick={() => begin('analysis')}>{t('problems.recordAnalysis')}</button>
+                <button type="button" disabled={busy} onClick={() => begin('resolve')}>{t('itsm.resolve')}</button>
               </>
             )}
-            {problem.status === 'RESOLVED' && <button type="button" disabled={busy} onClick={() => begin('reopen')}>Reopen</button>}
-            {isOpen && <button type="button" disabled={busy} onClick={() => begin('priority')}>Change priority</button>}
+            {problem.status === 'RESOLVED' && <button type="button" disabled={busy} onClick={() => begin('reopen')}>{t('itsm.reopen')}</button>}
+            {isOpen && <button type="button" disabled={busy} onClick={() => begin('priority')}>{t('problems.changePriority')}</button>}
           </div>
 
           {pending && (
-            <form className="form" aria-label="Problem action" onSubmit={submitPending}>
+            <form className="form" aria-label={t('problems.action')} onSubmit={submitPending}>
               {pending === 'analysis' && (
                 <>
-                  <label>Root cause<textarea value={rootCause} maxLength={4000} onChange={(e) => setRootCause(e.target.value)} /></label>
-                  <label>Workaround<textarea value={workaround} maxLength={4000} onChange={(e) => setWorkaround(e.target.value)} /></label>
+                  <label>{t('itsm.rootCause')}<textarea value={rootCause} maxLength={4000} onChange={(e) => setRootCause(e.target.value)} /></label>
+                  <label>{t('problems.workaround')}<textarea value={workaround} maxLength={4000} onChange={(e) => setWorkaround(e.target.value)} /></label>
                 </>
               )}
               {(pending === 'resolve' || pending === 'reopen') && (
-                <label>{pending === 'resolve' ? 'Permanent fix' : 'Why is it reopened?'}
+                <label>{pending === 'resolve' ? t('problems.permanentFix') : t('itsm.whyReopened')}
                   <textarea value={text} maxLength={pending === 'resolve' ? 4000 : 500} onChange={(e) => setText(e.target.value)} />
                 </label>
               )}
               {pending === 'priority' && (
-                <label>Priority
+                <label>{t('itsm.priority')}
                   <select value={newPriority} onChange={(e) => setNewPriority(e.target.value as ProblemPriority)}>{PROBLEM_PRIORITIES.map((v) => <option key={v} value={v}>{v}</option>)}</select>
                 </label>
               )}
               <div className="actions">
-                <button type="submit" className="primary" disabled={!pendingReady || busy}>Apply</button>
-                <button type="button" onClick={() => setPending(undefined)}>Never mind</button>
+                <button type="submit" className="primary" disabled={!pendingReady || busy}>{t('itsm.apply')}</button>
+                <button type="button" onClick={() => setPending(undefined)}>{t('itsm.neverMind')}</button>
               </div>
             </form>
           )}
 
           {isOpen && (
-            <form className="form" aria-label="Assign" onSubmit={(e) => { e.preventDefault(); if (isId(assignee.trim())) void run(() => problems.assign(id, assignee.trim())); }}>
-              <label>Assignee (user id)<input value={assignee} onChange={(e) => setAssignee(e.target.value)} /></label>
-              <button type="submit" disabled={!isId(assignee.trim()) || busy}>Assign</button>
+            <form className="form" aria-label={t('itsm.assign')} onSubmit={(e) => { e.preventDefault(); if (isId(assignee.trim())) void run(() => problems.assign(id, assignee.trim())); }}>
+              <label>{t('itsm.assigneeUserId')}<input value={assignee} onChange={(e) => setAssignee(e.target.value)} /></label>
+              <button type="submit" disabled={!isId(assignee.trim()) || busy}>{t('itsm.assign')}</button>
             </form>
           )}
 
-          <h3>Comments</h3>
-          {problem.comments.length === 0 ? <Empty>No comments yet.</Empty> : (
+          <h3>{t('itsm.comments')}</h3>
+          {problem.comments.length === 0 ? <Empty>{t('itsm.noComments')}</Empty> : (
             <ul>
               {problem.comments.map((entry) => (
                 <li key={entry.commentId}>
                   {entry.text}
-                  <div className="muted small">{short(entry.author)} - {new Date(entry.createdAt).toLocaleString()}</div>
+                  <div className="muted small">{short(entry.author)} - {new Date(entry.createdAt).toLocaleString(locale)}</div>
                 </li>
               ))}
             </ul>
           )}
           {problem.status !== 'CLOSED' && problem.status !== 'CANCELLED' && (
-            <form className="form" aria-label="Add comment" onSubmit={(e) => { e.preventDefault(); if (comment.trim()) void run(() => problems.comment(id, comment.trim())); }}>
-              <label>Comment (no personal data)<textarea value={comment} maxLength={4000} onChange={(e) => setComment(e.target.value)} /></label>
-              <button type="submit" disabled={comment.trim() === '' || busy}>Add comment</button>
+            <form className="form" aria-label={t('itsm.addComment')} onSubmit={(e) => { e.preventDefault(); if (comment.trim()) void run(() => problems.comment(id, comment.trim())); }}>
+              <label>{t('itsm.commentNoPersonal')}<textarea value={comment} maxLength={4000} onChange={(e) => setComment(e.target.value)} /></label>
+              <button type="submit" disabled={comment.trim() === '' || busy}>{t('itsm.addComment')}</button>
             </form>
           )}
 
-          <h3>History</h3>
+          <h3>{t('itsm.history')}</h3>
           <ol className="audit">
             {detail.data?.trail.map((entry) => (
               <li key={`${entry.occurredAt}-${entry.action}`}>
                 <strong>{entry.action}</strong> by {entry.executor}
-                <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
               </li>
             ))}
           </ol>

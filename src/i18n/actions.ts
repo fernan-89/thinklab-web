@@ -9,4 +9,14 @@ export const actionPt: Record<string, string> = {
   'Start maintenance': 'Iniciar manutenção',
   'Return to ready': 'Voltar a pronto',
   Redeploy: 'Reimplantar',
-};
+  Acknowledge: 'Reconhecer',
+  Cancel: 'Cancelar',
+  Close: 'Fechar',
+  'Declare known error': 'Declarar erro conhecido',
+  Publish: 'Publicar',
+  Resume: 'Retomar',
+  Retire: 'Aposentar',
+  'Start fulfilment': 'Iniciar atendimento',
+  'Start investigation': 'Iniciar investigação',
+  'Start work': 'Iniciar trabalho',
+  'Submit for review': 'Enviar para revisão',};
