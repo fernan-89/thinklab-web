@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { en, type MessageKey } from './en';
 import { actionPt } from './actions';
+import { labelPt } from './labels';
 import { pt } from './pt';
 import { statusPt } from './status';
 
@@ -53,6 +54,8 @@ interface I18n {
   status: (value: string) => string;
   /** The text of an action button: Portuguese when known, otherwise the English label. */
   action: (label: string) => string;
+  /** The text of an option the API types define in English (a class, a source, a strategy): Portuguese when known, otherwise the English text. */
+  label: (text: string) => string;
   /** The locale for dates and numbers: `new Date(x).toLocaleString(locale)`. */
   locale: string;
 }
@@ -68,6 +71,7 @@ function build(language: Language, setLanguage: (language: Language) => void): I
       return language === 'pt' ? (statusPt[value.toLowerCase()] ?? plain) : plain;
     },
     action: (label) => (language === 'pt' ? (actionPt[label] ?? label) : label),
+    label: (text) => (language === 'pt' ? (labelPt[text] ?? text) : text),
     locale: LOCALES[language],
   };
 }

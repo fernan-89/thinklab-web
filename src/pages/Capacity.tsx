@@ -7,30 +7,33 @@ import {
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
+import { useI18n } from '../i18n';
+import type { MessageKey } from '../i18n/en';
 
 function toError(failure: unknown): Error {
   return failure instanceof Error ? failure : new Error(String(failure));
 }
 
-const when = (value?: string) => (value ? new Date(value).toLocaleString() : undefined);
+const when = (value: string | undefined, locale: string) => (value ? new Date(value).toLocaleString(locale) : undefined);
 const percent = (value?: number) => (value === undefined ? undefined : `${value.toFixed(1)}%`);
 
 /** Where the trend leads, in words a person can read. */
-function runsOut(policy: CapacityPolicy): string {
+function runsOut(policy: CapacityPolicy, t: (key: MessageKey, params?: Record<string, string | number>) => string): string {
   switch (policy.forecast) {
     case 'WITHIN_HORIZON':
     case 'BEYOND_HORIZON':
-      return policy.daysToLimit === 0 ? 'now' : `in ${policy.daysToLimit?.toFixed(1)} days`;
+      return policy.daysToLimit === 0 ? t('capacity.now') : t('capacity.inDays', { days: policy.daysToLimit?.toFixed(1) ?? '' });
     case 'STABLE':
-      return 'not growing';
+      return t('capacity.notGrowing');
     case 'NOT_ENOUGH_DATA':
-      return 'not enough samples';
+      return t('capacity.notEnough');
     default:
       return '-';
   }
 }
 
 export function CapacityPage() {
+  const { t, status: statusLabel } = useI18n();
   const { api } = useSession();
   const capacity = capacityApi(api);
   const [levelFilter, setLevelFilter] = useState<CapacityLevel | ''>('');
@@ -51,49 +54,49 @@ export function CapacityPage() {
   return (
     <section>
       <div className="page-head">
-        <h1>Capacity</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New policy</button>
+        <h1>{t('nav.capacity')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('ops.newPolicy')}</button>
       </div>
-      <p className="muted">How full each asset is and, by a straight line through its recent samples, how many days are left. The tools that measure report each sample here; nothing on this page measures anything.</p>
-      <div className="tiles" aria-label="Summary">
-        {([['Critical', count('CRITICAL')], ['Warning', count('WARNING')], ['OK', count('OK')], ['No data', count('NO_DATA')], ['Paused', count('PAUSED')], ['Total', everything.data?.length]] as const).map(([label, value]) => (
+      <p className="muted">{t('capacity.intro')}</p>
+      <div className="tiles" aria-label={t('ops.summary')}>
+        {([['Critical', count('CRITICAL')], ['Warning', count('WARNING')], ['OK', count('OK')], [t('capacity.noData'), count('NO_DATA')], ['Paused', count('PAUSED')], ['Total', everything.data?.length]] as const).map(([label, value]) => (
           <div key={label} className="tile"><span className="n">{value ?? '-'}</span><span className="l">{label}</span></div>
         ))}
       </div>
       <ProblemBanner error={everything.error} />
       {creating && <NewPolicyForm onCancel={() => setCreating(false)} onCreated={(policy) => { setCreating(false); setSelectedId(policy.id); reloadAll(); }} />}
       <div className="filters">
-        <select aria-label="Level" value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as CapacityLevel | '')}>
-          <option value="">Any level</option>
-          {CAPACITY_LEVELS.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('ops.level')} value={levelFilter} onChange={(e) => setLevelFilter(e.target.value as CapacityLevel | '')}>
+          <option value="">{t('capacity.anyLevel')}</option>
+          {CAPACITY_LEVELS.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <select aria-label="Forecast" value={forecastFilter} onChange={(e) => setForecastFilter(e.target.value as CapacityForecast | '')}>
-          <option value="">Any forecast</option>
-          {CAPACITY_FORECASTS.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('capacity.forecast')} value={forecastFilter} onChange={(e) => setForecastFilter(e.target.value as CapacityForecast | '')}>
+          <option value="">{t('capacity.anyForecast')}</option>
+          {CAPACITY_FORECASTS.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <select aria-label="Metric" value={metricFilter} onChange={(e) => setMetricFilter(e.target.value as CapacityMetric | '')}>
-          <option value="">Any metric</option>
-          {CAPACITY_METRICS.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('ops.metric')} value={metricFilter} onChange={(e) => setMetricFilter(e.target.value as CapacityMetric | '')}>
+          <option value="">{t('capacity.anyMetric')}</option>
+          {CAPACITY_METRICS.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <select aria-label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as PolicyStatus | '')}>
-          <option value="">Active and paused</option>
-          {POLICY_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('common.status')} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as PolicyStatus | '')}>
+          <option value="">{t('ops.activePaused')}</option>
+          {POLICY_STATUSES.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No policies match.</Empty> : (
-          <table aria-label="Policies">
-            <thead><tr><th>Policy</th><th>Metric</th><th>Level</th><th>Used</th><th>Runs out</th><th>Status</th></tr></thead>
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('ops.noPolicies')}</Empty> : (
+          <table aria-label={t('ops.policies')}>
+            <thead><tr><th>{t('ops.policy')}</th><th>{t('ops.metric')}</th><th>{t('ops.level')}</th><th>{t('capacity.used')}</th><th>{t('capacity.runsOut')}</th><th>{t('common.status')}</th></tr></thead>
             <tbody>
               {list.data?.map((policy) => (
                 <tr key={policy.id} className={policy.id === selectedId ? 'selected' : undefined}>
                   <td><button type="button" className="link" onClick={() => setSelectedId(policy.id)}>{policy.name}</button></td>
                   <td>{policy.metric}</td>
-                  <td><StatusBadge status={policy.level} />{policy.stale && <span className="stale-note"> no recent sample</span>}</td>
+                  <td><StatusBadge status={policy.level} />{policy.stale && <span className="stale-note"> {t('capacity.noRecentSample')}</span>}</td>
                   <td>{percent(policy.utilisationPercent) ?? <span className="muted">-</span>}</td>
-                  <td>{runsOut(policy)}</td>
+                  <td>{runsOut(policy, t)}</td>
                   <td><StatusBadge status={policy.status} /></td>
                 </tr>
               ))}
@@ -107,6 +110,7 @@ export function CapacityPage() {
 }
 
 function NewPolicyForm({ onCreated, onCancel }: { onCreated: (policy: CapacityPolicy) => void; onCancel: () => void }) {
+  const { t, status: statusLabel } = useI18n();
   const { api } = useSession();
   const [name, setName] = useState('');
   const [assetId, setAssetId] = useState('');
@@ -139,29 +143,30 @@ function NewPolicyForm({ onCreated, onCancel }: { onCreated: (policy: CapacityPo
   }
 
   return (
-    <form className="card form" aria-label="New policy" onSubmit={submit}>
-      <h2>New policy</h2>
-      <label>Name<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
-      <label>Asset it watches (identifier)<input value={assetId} onChange={(e) => setAssetId(e.target.value)} /></label>
-      <label>Metric
-        <select value={metric} onChange={(e) => setMetric(e.target.value as CapacityMetric)}>{CAPACITY_METRICS.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+    <form className="card form" aria-label={t('ops.newPolicy')} onSubmit={submit}>
+      <h2>{t('ops.newPolicy')}</h2>
+      <label>{t('common.name')}<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
+      <label>{t('capacity.assetInput')}<input value={assetId} onChange={(e) => setAssetId(e.target.value)} /></label>
+      <label>{t('ops.metric')}
+        <select value={metric} onChange={(e) => setMetric(e.target.value as CapacityMetric)}>{CAPACITY_METRICS.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}</select>
       </label>
-      <label>Limit (in the unit the tool reports)<input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} /></label>
-      <label>Warn at (percent used)<input inputMode="numeric" value={warn} onChange={(e) => setWarn(e.target.value)} /></label>
-      <label>Critical at (percent used, above the warning)<input inputMode="numeric" value={critical} onChange={(e) => setCritical(e.target.value)} /></label>
-      <label>Trend drawn from the last (days)<input inputMode="numeric" value={windowDays} onChange={(e) => setWindowDays(e.target.value)} /></label>
-      <label>Warn about running out within (days)<input inputMode="numeric" value={horizonDays} onChange={(e) => setHorizonDays(e.target.value)} /></label>
-      <label>The tool reports every (hours)<input inputMode="numeric" value={reportEvery} onChange={(e) => setReportEvery(e.target.value)} /></label>
+      <label>{t('capacity.limitInput')}<input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} /></label>
+      <label>{t('capacity.warnInput')}<input inputMode="numeric" value={warn} onChange={(e) => setWarn(e.target.value)} /></label>
+      <label>{t('capacity.criticalInput')}<input inputMode="numeric" value={critical} onChange={(e) => setCritical(e.target.value)} /></label>
+      <label>{t('capacity.trendInput')}<input inputMode="numeric" value={windowDays} onChange={(e) => setWindowDays(e.target.value)} /></label>
+      <label>{t('capacity.runOutInput')}<input inputMode="numeric" value={horizonDays} onChange={(e) => setHorizonDays(e.target.value)} /></label>
+      <label>{t('capacity.reportsInput')}<input inputMode="numeric" value={reportEvery} onChange={(e) => setReportEvery(e.target.value)} /></label>
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Create policy'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : t('ops.createPolicy')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
 }
 
 function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const { t, locale, status: statusLabel } = useI18n();
   const { api } = useSession();
   const capacity = capacityApi(api);
   const detail = useAsync<{ policy: CapacityPolicy; samples: CapacitySample[]; trail: AuditEntry[] }>(async () => {
@@ -187,35 +192,35 @@ function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
   }
 
   return (
-    <aside className="detail" aria-label="Policy detail">
+    <aside className="detail" aria-label={t('ops.policyDetail')}>
       <div className="detail-head">
-        <h2>{policy?.name ?? 'Policy'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{policy?.name ?? t('ops.policy')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={actionError ?? detail.error} />
       {policy && (
         <>
           <p><StatusBadge status={policy.level} /> <StatusBadge status={policy.status} />{policy.forecast && <> <StatusBadge status={policy.forecast} /></>}</p>
           <dl>
-            <dt>Watch</dt><dd>{policy.metric} of {policy.limit}, warn at {policy.warnPercent}%, critical at {policy.criticalPercent}%</dd>
-            <dt>Asset</dt><dd><code>{policy.assetId}</code></dd>
-            {policy.lastValue !== undefined && <><dt>Latest sample</dt><dd>{policy.lastValue} ({percent(policy.utilisationPercent)}) at {when(policy.lastMeasuredAt)}{policy.stale ? ', older than twice the expected interval' : ''}</dd></>}
-            <dt>Trend</dt><dd>a straight line through the last {policy.windowDays} days; running out {runsOut(policy)}{policy.projectedExhaustionAt ? `, around ${when(policy.projectedExhaustionAt)}` : ''}</dd>
-            <dt>Reports</dt><dd>expected every {policy.reportEveryHours} h, warning when it would run out within {policy.horizonDays} days</dd>
+            <dt>{t('capacity.watch')}</dt><dd>{t('capacity.watching', { metric: statusLabel(policy.metric), limit: policy.limit, warn: policy.warnPercent, critical: policy.criticalPercent })}</dd>
+            <dt>{t('ops.asset')}</dt><dd><code>{policy.assetId}</code></dd>
+            {policy.lastValue !== undefined && <><dt>{t('capacity.latest')}</dt><dd>{policy.lastValue} ({percent(policy.utilisationPercent)}) at {when(policy.lastMeasuredAt, locale)}{policy.stale ? ', older than twice the expected interval' : ''}</dd></>}
+            <dt>{t('capacity.trend')}</dt><dd>{t('capacity.trendText', { days: policy.windowDays, runsOut: runsOut(policy, t), around: policy.projectedExhaustionAt ? t('capacity.around', { when: when(policy.projectedExhaustionAt, locale) ?? '' }) : '' })}</dd>
+            <dt>{t('capacity.reports')}</dt><dd>{t('capacity.reportsText', { hours: policy.reportEveryHours, days: policy.horizonDays })}</dd>
           </dl>
-          <div className="actions" aria-label="Actions">
+          <div className="actions" aria-label={t('itsm.actions')}>
             {policy.status === 'ACTIVE'
-              ? <button type="button" disabled={busy} onClick={() => void run(() => capacity.control(id, 'pause'))}>Pause</button>
-              : <button type="button" disabled={busy} onClick={() => void run(() => capacity.control(id, 'resume'))}>Resume</button>}
+              ? <button type="button" disabled={busy} onClick={() => void run(() => capacity.control(id, 'pause'))}>{t('ops.pause')}</button>
+              : <button type="button" disabled={busy} onClick={() => void run(() => capacity.control(id, 'resume'))}>{t('ops.resume')}</button>}
           </div>
-          <h3>Recent samples</h3>
-          {detail.data?.samples.length === 0 ? <Empty>No samples reported yet.</Empty> : (
-            <table aria-label="Recent samples">
-              <thead><tr><th>Taken</th><th>Value</th><th>By</th></tr></thead>
+          <h3>{t('capacity.recentSamples')}</h3>
+          {detail.data?.samples.length === 0 ? <Empty>{t('capacity.noSamples')}</Empty> : (
+            <table aria-label={t('capacity.recentSamples')}>
+              <thead><tr><th>{t('capacity.taken')}</th><th>{t('capacity.value')}</th><th>{t('ops.by')}</th></tr></thead>
               <tbody>
                 {detail.data?.samples.map((entry) => (
                   <tr key={entry.id}>
-                    <td>{new Date(entry.measuredAt).toLocaleString()}</td>
+                    <td>{new Date(entry.measuredAt).toLocaleString(locale)}</td>
                     <td>{entry.value}</td>
                     <td>{entry.reportedBy}</td>
                   </tr>
@@ -223,12 +228,12 @@ function PolicyDetail({ id, onClose, onChanged }: { id: string; onClose: () => v
               </tbody>
             </table>
           )}
-          <h3>History</h3>
+          <h3>{t('itsm.history')}</h3>
           <ol className="audit">
             {detail.data?.trail.map((entry) => (
               <li key={`${entry.occurredAt}-${entry.action}`}>
                 <strong>{entry.action}</strong> by {entry.executor}
-                <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
               </li>
             ))}
           </ol>

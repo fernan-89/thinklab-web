@@ -8,15 +8,16 @@ import {
 import { useSession } from '../auth/session';
 import { Empty, ProblemBanner, StatusBadge } from '../components/Feedback';
 import { useAsync } from '../useAsync';
+import { useI18n } from '../i18n';
 
 function toError(failure: unknown): Error {
   return failure instanceof Error ? failure : new Error(String(failure));
 }
 
 const optionalNumber = (value: string): number | undefined => (value.trim() === '' ? undefined : Number(value));
-const when = (value?: string) => (value ? new Date(value).toLocaleString() : undefined);
-const strategyLabel = (value: RecoveryStrategy) => RECOVERY_STRATEGIES.find((s) => s.value === value)?.label.split(' (')[0] ?? value;
-const kindLabel = (value: ExerciseKind) => EXERCISE_KINDS.find((k) => k.value === value)?.label ?? value;
+const when = (value: string | undefined, locale: string) => (value ? new Date(value).toLocaleString(locale) : undefined);
+const strategyEnglish = (value: RecoveryStrategy) => RECOVERY_STRATEGIES.find((s) => s.value === value)?.label ?? value;
+const kindEnglish = (value: ExerciseKind) => EXERCISE_KINDS.find((k) => k.value === value)?.label ?? value;
 
 /** The value of a datetime-local input, shifted by some minutes from now, in the browser's own time. */
 function localInput(minutesFromNow: number): string {
@@ -26,6 +27,7 @@ function localInput(minutesFromNow: number): string {
 }
 
 export function RecoveryPage() {
+  const { t, locale, status: statusLabel, label: optionLabel } = useI18n();
   const { api } = useSession();
   const dr = drApi(api);
   const [readinessFilter, setReadinessFilter] = useState<Readiness | ''>('');
@@ -41,42 +43,42 @@ export function RecoveryPage() {
   return (
     <section>
       <div className="page-head">
-        <h1>Recovery</h1>
-        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>New plan</button>
+        <h1>{t('nav.recovery')}</h1>
+        <button type="button" className="primary" onClick={() => setCreating(true)} disabled={creating}>{t('recovery.new')}</button>
       </div>
-      <p className="muted">How each asset is meant to come back from a disaster, and whether that has been proved lately. People and tools report each exercise here; nothing on this page runs one.</p>
-      <div className="tiles" aria-label="Summary">
-        {([['Ready', count('READY')], ['Never tested', count('NEVER_TESTED')], ['Test overdue', count('TEST_OVERDUE')], ['Objective missed', count('OBJECTIVE_MISSED')],
-          ['Last exercise failed', count('LAST_EXERCISE_FAILED')], ['Paused', count('PAUSED')], ['Total', everything.data?.length]] as const).map(([label, value]) => (
+      <p className="muted">{t('recovery.intro')}</p>
+      <div className="tiles" aria-label={t('ops.summary')}>
+        {([['Ready', count('READY')], [t('recovery.neverTested'), count('NEVER_TESTED')], [t('recovery.testOverdue'), count('TEST_OVERDUE')], [t('recovery.objectiveMissed'), count('OBJECTIVE_MISSED')],
+          [t('recovery.lastFailed'), count('LAST_EXERCISE_FAILED')], ['Paused', count('PAUSED')], ['Total', everything.data?.length]] as const).map(([label, value]) => (
           <div key={label} className="tile"><span className="n">{value ?? '-'}</span><span className="l">{label}</span></div>
         ))}
       </div>
       <ProblemBanner error={everything.error} />
       {creating && <NewPlanForm onCancel={() => setCreating(false)} onCreated={(plan) => { setCreating(false); setSelectedId(plan.id); reloadAll(); }} />}
       <div className="filters">
-        <select aria-label="Readiness" value={readinessFilter} onChange={(e) => setReadinessFilter(e.target.value as Readiness | '')}>
-          <option value="">Any readiness</option>
-          {READINESSES.map((value) => <option key={value} value={value}>{value.replace(/_/g, ' ')}</option>)}
+        <select aria-label={t('recovery.readiness')} value={readinessFilter} onChange={(e) => setReadinessFilter(e.target.value as Readiness | '')}>
+          <option value="">{t('recovery.anyReadiness')}</option>
+          {READINESSES.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <select aria-label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as PolicyStatus | '')}>
-          <option value="">Active and paused</option>
-          {POLICY_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
+        <select aria-label={t('common.status')} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as PolicyStatus | '')}>
+          <option value="">{t('ops.activePaused')}</option>
+          {POLICY_STATUSES.map((value) => <option key={value} value={value}>{statusLabel(value)}</option>)}
         </select>
-        <span className="muted">{list.loading ? 'Loading...' : `${list.data?.length ?? 0} shown`}</span>
+        <span className="muted">{list.loading ? t('common.loading') : t('common.shown', { count: list.data?.length ?? 0 })}</span>
       </div>
       <ProblemBanner error={list.error} />
       <div className="split">
-        {list.data?.length === 0 && !list.loading ? <Empty>No plans match.</Empty> : (
-          <table aria-label="Plans">
-            <thead><tr><th>Plan</th><th>Strategy</th><th>Readiness</th><th>Last exercise</th><th>Next due</th><th>Status</th></tr></thead>
+        {list.data?.length === 0 && !list.loading ? <Empty>{t('recovery.noPlans')}</Empty> : (
+          <table aria-label={t('recovery.plans')}>
+            <thead><tr><th>{t('recovery.plan')}</th><th>{t('recovery.strategy')}</th><th>{t('recovery.readiness')}</th><th>{t('recovery.lastExercise')}</th><th>{t('recovery.nextDue')}</th><th>{t('common.status')}</th></tr></thead>
             <tbody>
               {list.data?.map((plan) => (
                 <tr key={plan.id} className={plan.id === selectedId ? 'selected' : undefined}>
                   <td><button type="button" className="link" onClick={() => setSelectedId(plan.id)}>{plan.name}</button></td>
-                  <td>{strategyLabel(plan.strategy)}</td>
+                  <td>{optionLabel(strategyEnglish(plan.strategy)).split(' (')[0]}</td>
                   <td><StatusBadge status={plan.readiness} /></td>
-                  <td>{when(plan.lastExerciseAt) ?? <span className="muted">none yet</span>}</td>
-                  <td>{when(plan.nextExerciseDueAt) ?? <span className="muted">-</span>}</td>
+                  <td>{when(plan.lastExerciseAt, locale) ?? <span className="muted">{t('ops.noneYet')}</span>}</td>
+                  <td>{when(plan.nextExerciseDueAt, locale) ?? <span className="muted">-</span>}</td>
                   <td><StatusBadge status={plan.status} /></td>
                 </tr>
               ))}
@@ -90,6 +92,7 @@ export function RecoveryPage() {
 }
 
 function NewPlanForm({ onCreated, onCancel }: { onCreated: (plan: RecoveryPlan) => void; onCancel: () => void }) {
+  const { t, label: optionLabel } = useI18n();
   const { api } = useSession();
   const [name, setName] = useState('');
   const [assetId, setAssetId] = useState('');
@@ -120,29 +123,30 @@ function NewPlanForm({ onCreated, onCancel }: { onCreated: (plan: RecoveryPlan) 
   }
 
   return (
-    <form className="card form" aria-label="New plan" onSubmit={submit}>
-      <h2>New plan</h2>
-      <label>Name<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
-      <label>Asset it recovers (identifier)<input value={assetId} onChange={(e) => setAssetId(e.target.value)} /></label>
-      <label>Strategy
+    <form className="card form" aria-label={t('recovery.new')} onSubmit={submit}>
+      <h2>{t('recovery.new')}</h2>
+      <label>{t('common.name')}<input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} /></label>
+      <label>{t('recovery.assetInput')}<input value={assetId} onChange={(e) => setAssetId(e.target.value)} /></label>
+      <label>{t('recovery.strategy')}
         <select value={strategy} onChange={(e) => setStrategy(e.target.value as RecoveryStrategy)}>
-          {RECOVERY_STRATEGIES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+          {RECOVERY_STRATEGIES.map((s) => <option key={s.value} value={s.value}>{optionLabel(s.label)}</option>)}
         </select>
       </label>
-      <label>Longest recovery (minutes)<input inputMode="numeric" value={rto} onChange={(e) => setRto(e.target.value)} /></label>
-      <label>Most data that may be lost (minutes; a plan that restores from a backup cannot promise zero)<input inputMode="numeric" value={rpo} onChange={(e) => setRpo(e.target.value)} /></label>
-      <label>Prove it every (days)<input inputMode="numeric" value={every} onChange={(e) => setEvery(e.target.value)} /></label>
-      <label>Runbook (an identifier such as KB-1042, optional)<input value={runbookRef} maxLength={64} onChange={(e) => setRunbookRef(e.target.value)} /></label>
+      <label>{t('ops.longestRecovery')}<input inputMode="numeric" value={rto} onChange={(e) => setRto(e.target.value)} /></label>
+      <label>{t('recovery.rpoInput')}<input inputMode="numeric" value={rpo} onChange={(e) => setRpo(e.target.value)} /></label>
+      <label>{t('recovery.proveInput')}<input inputMode="numeric" value={every} onChange={(e) => setEvery(e.target.value)} /></label>
+      <label>{t('recovery.runbookInput')}<input value={runbookRef} maxLength={64} onChange={(e) => setRunbookRef(e.target.value)} /></label>
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Create plan'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : t('recovery.create')}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
 }
 
 function PlanDetail({ id, onClose, onChanged }: { id: string; onClose: () => void; onChanged: () => void }) {
+  const { t, locale, label: optionLabel } = useI18n();
   const { api } = useSession();
   const dr = drApi(api);
   const detail = useAsync<{ plan: RecoveryPlan; exercises: RecoveryExercise[]; trail: AuditEntry[] }>(async () => {
@@ -169,56 +173,56 @@ function PlanDetail({ id, onClose, onChanged }: { id: string; onClose: () => voi
   }
 
   return (
-    <aside className="detail" aria-label="Plan detail">
+    <aside className="detail" aria-label={t('recovery.detail')}>
       <div className="detail-head">
-        <h2>{plan?.name ?? 'Plan'}</h2>
-        <button type="button" className="link" onClick={onClose}>Close</button>
+        <h2>{plan?.name ?? t('recovery.plan')}</h2>
+        <button type="button" className="link" onClick={onClose}>{t('common.close')}</button>
       </div>
       <ProblemBanner error={actionError ?? detail.error} />
       {plan && (
         <>
           <p><StatusBadge status={plan.readiness} /> <StatusBadge status={plan.status} /></p>
           <dl>
-            <dt>Promise</dt><dd>{strategyLabel(plan.strategy).toLowerCase()}, recovered within {plan.rtoMinutes} min, at most {plan.rpoMinutes} min of data lost, proved every {plan.testEveryDays} days</dd>
-            <dt>Asset</dt><dd><code>{plan.assetId}</code></dd>
-            {plan.runbookRef && <><dt>Runbook</dt><dd><code>{plan.runbookRef}</code></dd></>}
-            {plan.nextExerciseDueAt && <><dt>Next exercise due</dt><dd>{when(plan.nextExerciseDueAt)}</dd></>}
+            <dt>{t('ops.promise')}</dt><dd>{t('recovery.promise', { strategy: optionLabel(strategyEnglish(plan.strategy)).split(' (')[0].toLowerCase(), rto: plan.rtoMinutes, rpo: plan.rpoMinutes, days: plan.testEveryDays })}</dd>
+            <dt>{t('ops.asset')}</dt><dd><code>{plan.assetId}</code></dd>
+            {plan.runbookRef && <><dt>{t('recovery.runbook')}</dt><dd><code>{plan.runbookRef}</code></dd></>}
+            {plan.nextExerciseDueAt && <><dt>{t('recovery.nextExerciseDue')}</dt><dd>{when(plan.nextExerciseDueAt, locale)}</dd></>}
             {plan.lastMeasuredMinutes !== undefined
-              ? <><dt>Last measured recovery</dt><dd>{plan.lastMeasuredMinutes} min, {plan.rtoMet ? 'within' : 'over'} the objective{plan.lastMeasuredDataLossMinutes !== undefined ? `; ${plan.lastMeasuredDataLossMinutes} min of data lost, ${plan.rpoMet ? 'within' : 'over'} the objective` : ''}</dd></>
-              : <><dt>Objectives</dt><dd><span className="muted">not measured yet: only a failover or a full recovery measures them</span></dd></>}
-            {plan.lastExerciseAt && <><dt>Last exercise</dt><dd>{when(plan.lastExerciseAt)}, {plan.lastOutcome?.toLowerCase()}</dd></>}
+              ? <><dt>{t('recovery.lastMeasured')}</dt><dd>{t(plan.rtoMet ? 'ops.minutesWithin' : 'ops.minutesOver', { minutes: plan.lastMeasuredMinutes ?? '' })}{plan.lastMeasuredDataLossMinutes !== undefined ? `; ${t(plan.rpoMet ? 'recovery.dataLostWithin' : 'recovery.dataLostOver', { minutes: plan.lastMeasuredDataLossMinutes })}` : ''}</dd></>
+              : <><dt>{t('recovery.objectives')}</dt><dd><span className="muted">{t('recovery.notMeasured')}</span></dd></>}
+            {plan.lastExerciseAt && <><dt>{t('recovery.lastExercise')}</dt><dd>{when(plan.lastExerciseAt, locale)}, {plan.lastOutcome?.toLowerCase()}</dd></>}
           </dl>
-          <div className="actions" aria-label="Actions">
-            <button type="button" disabled={busy} onClick={() => setReporting(true)}>Report an exercise</button>
+          <div className="actions" aria-label={t('itsm.actions')}>
+            <button type="button" disabled={busy} onClick={() => setReporting(true)}>{t('recovery.report')}</button>
             {plan.status === 'ACTIVE'
-              ? <button type="button" disabled={busy} onClick={() => void run(() => dr.control(id, 'pause'))}>Pause</button>
-              : <button type="button" disabled={busy} onClick={() => void run(() => dr.control(id, 'resume'))}>Resume</button>}
+              ? <button type="button" disabled={busy} onClick={() => void run(() => dr.control(id, 'pause'))}>{t('ops.pause')}</button>
+              : <button type="button" disabled={busy} onClick={() => void run(() => dr.control(id, 'resume'))}>{t('ops.resume')}</button>}
           </div>
           {reporting && <ReportExerciseForm planId={id} onCancel={() => setReporting(false)} onReported={() => { setReporting(false); detail.reload(); onChanged(); }} />}
-          <h3>Recent exercises</h3>
-          {detail.data?.exercises.length === 0 ? <Empty>No exercises reported yet.</Empty> : (
-            <table aria-label="Recent exercises">
-              <thead><tr><th>Started</th><th>Kind</th><th>Result</th><th>Took</th><th>Data lost</th><th>By</th></tr></thead>
+          <h3>{t('recovery.recentExercises')}</h3>
+          {detail.data?.exercises.length === 0 ? <Empty>{t('recovery.noExercises')}</Empty> : (
+            <table aria-label={t('recovery.recentExercises')}>
+              <thead><tr><th>{t('ops.started')}</th><th>{t('ops.kind')}</th><th>{t('ops.result')}</th><th>{t('backups.took')}</th><th>{t('recovery.dataLost')}</th><th>{t('ops.by')}</th></tr></thead>
               <tbody>
                 {detail.data?.exercises.map((entry) => (
                   <tr key={entry.id}>
-                    <td>{new Date(entry.startedAt).toLocaleString()}</td>
-                    <td>{kindLabel(entry.kind)}</td>
+                    <td>{new Date(entry.startedAt).toLocaleString(locale)}</td>
+                    <td>{optionLabel(kindEnglish(entry.kind))}</td>
                     <td>{entry.outcome === 'SUCCEEDED' ? 'succeeded' : <span className="field-error">{entry.outcome.toLowerCase()}: {entry.failureReason}</span>}</td>
-                    <td>{entry.durationMinutes} min</td>
-                    <td>{entry.dataLossMinutes !== undefined ? `${entry.dataLossMinutes} min` : <span className="muted">-</span>}</td>
+                    <td>{t('common.minutes', { count: entry.durationMinutes })}</td>
+                    <td>{entry.dataLossMinutes !== undefined ? t('common.minutes', { count: entry.dataLossMinutes }) : <span className="muted">-</span>}</td>
                     <td>{entry.reportedBy}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-          <h3>History</h3>
+          <h3>{t('itsm.history')}</h3>
           <ol className="audit">
             {detail.data?.trail.map((entry) => (
               <li key={`${entry.occurredAt}-${entry.action}`}>
                 <strong>{entry.action}</strong> by {entry.executor}
-                <div className="muted small">{new Date(entry.occurredAt).toLocaleString()}{entry.detail ? ` - ${entry.detail}` : ''}</div>
+                <div className="muted small">{new Date(entry.occurredAt).toLocaleString(locale)}{entry.detail ? ` - ${entry.detail}` : ''}</div>
               </li>
             ))}
           </ol>
@@ -229,6 +233,7 @@ function PlanDetail({ id, onClose, onChanged }: { id: string; onClose: () => voi
 }
 
 function ReportExerciseForm({ planId, onReported, onCancel }: { planId: string; onReported: () => void; onCancel: () => void }) {
+  const { t, label: optionLabel, status: statusLabel } = useI18n();
   const { api } = useSession();
   const [kind, setKind] = useState<ExerciseKind>('FAILOVER');
   const [outcome, setOutcome] = useState<ExerciseOutcome>('SUCCEEDED');
@@ -260,27 +265,27 @@ function ReportExerciseForm({ planId, onReported, onCancel }: { planId: string; 
   }
 
   return (
-    <form className="card form" aria-label="Report an exercise" onSubmit={submit}>
-      <h3>Report an exercise</h3>
-      <label>Kind
-        <select value={kind} onChange={(e) => setKind(e.target.value as ExerciseKind)}>{EXERCISE_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}</select>
+    <form className="card form" aria-label={t('recovery.report')} onSubmit={submit}>
+      <h3>{t('recovery.report')}</h3>
+      <label>{t('ops.kind')}
+        <select value={kind} onChange={(e) => setKind(e.target.value as ExerciseKind)}>{EXERCISE_KINDS.map((k) => <option key={k.value} value={k.value}>{optionLabel(k.label)}</option>)}</select>
       </label>
-      <label>Outcome
-        <select value={outcome} onChange={(e) => setOutcome(e.target.value as ExerciseOutcome)}>{EXERCISE_OUTCOMES.map((o) => <option key={o} value={o}>{o.toLowerCase()}</option>)}</select>
+      <label>{t('recovery.outcome')}
+        <select value={outcome} onChange={(e) => setOutcome(e.target.value as ExerciseOutcome)}>{EXERCISE_OUTCOMES.map((o) => <option key={o} value={o}>{statusLabel(o).toLowerCase()}</option>)}</select>
       </label>
       {failed && (
-        <label>What went wrong
-          <select value={reason} onChange={(e) => setReason(e.target.value as ExerciseFailureReason)}>{EXERCISE_FAILURE_REASONS.map((r) => <option key={r} value={r}>{r.replace(/_/g, ' ').toLowerCase()}</option>)}</select>
+        <label>{t('recovery.whatWrong')}
+          <select value={reason} onChange={(e) => setReason(e.target.value as ExerciseFailureReason)}>{EXERCISE_FAILURE_REASONS.map((r) => <option key={r} value={r}>{statusLabel(r).toLowerCase()}</option>)}</select>
         </label>
       )}
-      <label>Started<input type="datetime-local" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} /></label>
-      <label>Finished<input type="datetime-local" value={finishedAt} onChange={(e) => setFinishedAt(e.target.value)} /></label>
-      <label>Data lost (minutes, if known)<input inputMode="numeric" value={loss} onChange={(e) => setLoss(e.target.value)} /></label>
-      <p className="muted">How long it took is the time between the two moments. A walk through the runbook counts as a pass but does not measure the recovery time.</p>
+      <label>{t('ops.started')}<input type="datetime-local" value={startedAt} onChange={(e) => setStartedAt(e.target.value)} /></label>
+      <label>{t('recovery.finished')}<input type="datetime-local" value={finishedAt} onChange={(e) => setFinishedAt(e.target.value)} /></label>
+      <label>{t('recovery.dataLostInput')}<input inputMode="numeric" value={loss} onChange={(e) => setLoss(e.target.value)} /></label>
+      <p className="muted">{t('recovery.durationNote')}</p>
       <ProblemBanner error={error} />
       <div className="actions">
-        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? 'Saving...' : 'Report'}</button>
-        <button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" className="primary" disabled={!ready || busy}>{busy ? t('common.saving') : 'Report'}</button>
+        <button type="button" onClick={onCancel}>{t('common.cancel')}</button>
       </div>
     </form>
   );
